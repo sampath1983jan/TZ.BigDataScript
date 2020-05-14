@@ -1,0 +1,94 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="15.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <Import Project="$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props" Condition="Exists('$(MSBuildExtensionsPath)\$(MSBuildToolsVersion)\Microsoft.Common.props')" />
+  <PropertyGroup>
+    <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
+    <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
+    <ProjectGuid>{6F1AB657-B0A1-4A2D-B110-8A82ADA39D5A}</ProjectGuid>
+    <OutputType>Library</OutputType>
+    <AppDesignerFolder>Properties</AppDesignerFolder>
+    <RootNamespace>TZ.CompExtention</RootNamespace>
+    <AssemblyName>TZ.CompExtention</AssemblyName>
+    <TargetFrameworkVersion>v4.6.1</TargetFrameworkVersion>
+    <FileAlignment>512</FileAlignment>
+    <Deterministic>true</Deterministic>
+    <TargetFrameworkProfile />
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Debug|AnyCPU' ">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <OutputPath>bin\Debug\</OutputPath>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <PropertyGroup Condition=" '$(Configuration)|$(Platform)' == 'Release|AnyCPU' ">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <OutputPath>bin\Release\</OutputPath>
+    <DefineConstants>TRACE</DefineConstants>
+    <ErrorReport>prompt</ErrorReport>
+    <WarningLevel>4</WarningLevel>
+  </PropertyGroup>
+  <ItemGroup>
+    <Reference Include="Newtonsoft.Json, Version=12.0.0.0, Culture=neutral, PublicKeyToken=30ad4fe6b2a6aeed, processorArchitecture=MSIL">
+      <HintPath>..\packages\Newtonsoft.Json.12.0.3\lib\net45\Newtonsoft.Json.dll</HintPath>
+    </Reference>
+    <Reference Include="System" />
+    <Reference Include="System.Core" />
+    <Reference Include="System.Xml.Linq" />
+    <Reference Include="System.Data.DataSetExtensions" />
+    <Reference Include="Microsoft.CSharp" />
+    <Reference Include="System.Data" />
+    <Reference Include="System.Net.Http" />
+    <Reference Include="System.Xml" />
+    <Reference Include="Tech.Data, Version=1.0.0.0, Culture=neutral, processorArchitecture=MSIL">
+      <SpecificVersion>False</SpecificVersion>
+      <HintPath>bin\Debug\Tech.Data.dll</HintPath>
+    </Reference>
+  </ItemGroup>
+  <ItemGroup>
+    <Compile Include="Builder\ComponentBuilder.cs" />
+    <Compile Include="Builder\Data\ComponentBuilder.cs" />
+    <Compile Include="Builder\Data\ComponentSchema.cs" />
+    <Compile Include="Builder\Data\ComponentViewBuilder.cs" />
+    <Compile Include="Builder\Data\DataBase.cs" />
+    <Compile Include="Builder\Data\Setup.cs" />
+    <Compile Include="Builder\FieldElement.cs" />
+    <Compile Include="Builder\TalentozComponent.cs" />
+    <Compile Include="Component.cs" />
+    <Compile Include="Attribute.cs" />
+    <Compile Include="ComponentManager.cs" />
+    <Compile Include="ComponentView.cs" />
+    <Compile Include="DataAccess\ComponentView.cs" />
+    <Compile Include="DataAccess\ComponentViewJSonDataAccess.cs" />
+    <Compile Include="ComponentViewManager.cs" />
+    <Compile Include="DataAccess\Component.cs" />
+    <Compile Include="DataAccess\ImportTemplate.cs" />
+    <Compile Include="Implementation\IComponentDataAccess.cs" />
+    <Compile Include="Implementation\IAttribute.cs" />
+    <Compile Include="Implementation\IComponent.cs" />
+    <Compile Include="Implementation\IComponentView.cs" />
+    <Compile Include="Implementation\IComponentViewDataAccess.cs" />
+    <Compile Include="DataAccess\ComponentJsonDataAccess.cs" />
+    <Compile Include="ImportTemplate\TemplateField.cs" />
+    <Compile Include="ImportTemplate\Template.cs" />
+    <Compile Include="LookupComponentField.cs" />
+    <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Shared.cs" />
+    <Compile Include="ViewComponent.cs" />
+    <Compile Include="ViewRelation.cs" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="packages.config" />
+  </ItemGroup>
+  <ItemGroup>
+    <ProjectReference Include="..\TZ.Data\TZ.Data.csproj">
+      <Project>{77FF1004-F0F0-466E-ADBD-042560046A25}</Project>
+      <Name>TZ.Data</Name>
+    </ProjectReference>
+  </ItemGroup>
+  <ItemGroup />
+  <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />
+</Project>
