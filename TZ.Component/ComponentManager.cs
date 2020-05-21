@@ -67,6 +67,18 @@ namespace TZ.CompExtention
                 }
             }        
         }
+        public bool SaveAttribute(int clientID, CompExtention.Attribute att) {
+            att.ComponentID = this.Component.ID;           
+            if (this.component.Attributes.Where(x => x.ID == att.ID && x.ClientID == clientID).ToList().Count > 0)
+            {
+                return this.actions.UpdateAttribute(this.component.ID, att);
+            }
+            else {
+                att.ClientID = clientID;
+                return this.actions.SaveAttribute(this.component.ID, att);
+            }         
+        }
+
         public static List<Attribute> GetComponentAttributes(string components,int clientID, IComponentDataAccess access) {
           return access.GetAttribute(components, clientID);
         }

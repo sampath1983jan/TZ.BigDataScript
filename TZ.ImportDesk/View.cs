@@ -17,57 +17,46 @@ namespace TZ.ImportDesk
         {
             InitializeComponent();
         }
+        private int Clientid;
+        public View(int clientID,string conn)
+        {
+            Clientid = clientID;
+            connection = conn;
+            InitializeComponent();
+        }
 
         public  CompExtention.ComponentView view;
-
         int ViewitemIndex = 0;
         List<CompExtention.Component> CompList;
-        string connection = "Server=183.82.34.174;Initial Catalog=talentozdev;Uid=admin;Pwd=admin312";
-        private void listView1_DragEnter(object sender, DragEventArgs e)
-        {
-            
-
-        }
-
-        private void listView1_DragDrop(object sender, DragEventArgs e)
-        {
-
-        }
-
-        private void listView1_DragLeave(object sender, EventArgs e)
-        {
-
-        }
-
-        private void listView1_DragOver(object sender, DragEventArgs e)
-        {
-
-        }
-
+        string connection = "";
+             
         private void PopulateListViewTreeView()
-        {
-       
+        {       
             lstComponentList.Items.Clear();
             foreach (CompExtention.Component s in CompList)
             {
                 var li = new ListViewItem(s.Name);
                 lstComponentList.Items.Add(li);
-            }
-          
+            }          
         }
-
+        public void UpdateChanges(string conn, int clientid) {
+            if (conn != "") {
+                grContainer.Controls.Clear();
+                ViewitemIndex = 0;
+                CompList = new List<CompExtention.Component>();
+                CompList = ComponentDataHandler.GetComponents(connection);
+               // lstComponentList.ItemDrag += new ItemDragEventHandler(listView1_ItemDrag);
+                view = new CompExtention.ComponentView();             
+                PopulateListViewTreeView();
+                AddViewRelation(0);
+            }           
+        }
         private void View_Load(object sender, EventArgs e)
         {
-            CompList = ComponentDataHandler.GetComponents(connection);
             lstComponentList.ItemDrag += new ItemDragEventHandler(listView1_ItemDrag);
-            view = new  CompExtention.ComponentView();
-
-            //treeView1.DragEnter += new DragEventHandler(treeView1_DragEnter);
-            //treeView1.DragDrop += new DragEventHandler(treeView1_DragDrop);
-            PopulateListViewTreeView();
-            AddViewRelation(0);
-
-
+            if (connection != "") {
+                UpdateChanges(connection,Clientid );
+            }    
         }
         private void AddViewRelation(int index) {
             var co = new CompExtention.ComponentRelation() { ComponentID = "", ChildComponentID = "" };
@@ -79,7 +68,7 @@ namespace TZ.ImportDesk
             }
             if (index != 0)
             {
-                var r = new ViewRelation(co);
+                var r = new ViewRelation(co, connection);
                 r.Name = "r_" + index;
                 r.Location = new Point(10, 20 + h);
                 r.Height = defaultHeight;
@@ -88,7 +77,7 @@ namespace TZ.ImportDesk
                 grContainer.Controls.Add(r);
             }
             else {
-                var r = new ViewRelation(co);
+                var r = new ViewRelation(co, connection);
                 r.Name = "r_" + index;
                 r.Location = new Point(10, 20 );
                 r.Height = defaultHeight;

@@ -49,19 +49,17 @@
             this.columnHeader1});
             this.lstComponentList.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.lstComponentList.FullRowSelect = true;
+            this.lstComponentList.GridLines = true;
             this.lstComponentList.HideSelection = false;
             this.lstComponentList.Location = new System.Drawing.Point(12, 110);
             this.lstComponentList.Margin = new System.Windows.Forms.Padding(4);
             this.lstComponentList.MultiSelect = false;
             this.lstComponentList.Name = "lstComponentList";
             this.lstComponentList.Size = new System.Drawing.Size(374, 571);
+            this.lstComponentList.Sorting = System.Windows.Forms.SortOrder.Ascending;
             this.lstComponentList.TabIndex = 1;
             this.lstComponentList.UseCompatibleStateImageBehavior = false;
             this.lstComponentList.View = System.Windows.Forms.View.Details;
-            this.lstComponentList.DragDrop += new System.Windows.Forms.DragEventHandler(this.listView1_DragDrop);
-            this.lstComponentList.DragEnter += new System.Windows.Forms.DragEventHandler(this.listView1_DragEnter);
-            this.lstComponentList.DragOver += new System.Windows.Forms.DragEventHandler(this.listView1_DragOver);
-            this.lstComponentList.DragLeave += new System.EventHandler(this.listView1_DragLeave);
             // 
             // columnHeader1
             // 

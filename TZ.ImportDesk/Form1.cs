@@ -512,10 +512,20 @@ namespace TZ.ImportDesk
 
         private void button4_Click(object sender, EventArgs e)
         {
+            //Server=183.82.34.174;Initial Catalog=talentozdev;Uid=admin;Pwd=admin312
+            if (txtConnection.Text != "") {
+                TZ.CompExtention.Shared.ExecuteSetup(txtConnection.Text);
+                MessageBox.Show("done");
+            }             
            
-            TZ.CompExtention.Shared.ExecuteSetup(" Server=183.82.34.174;Initial Catalog=talentozdev;Uid=admin;Pwd=admin312");
-            MessageBox.Show("done");
-
+        }
+        private void btnClear_Click(object sender, EventArgs e)
+        {
+            if (txtConnection.Text != "")
+            {
+                TZ.CompExtention.Shared.ClearSchema(txtConnection.Text);
+                MessageBox.Show("cleared");
+            }
         }
     }
 }

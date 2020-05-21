@@ -84,7 +84,7 @@
             this.gbRelation.TabIndex = 3;
             this.gbRelation.TabStop = false;
             this.gbRelation.Text = "Relationship";
-            this.gbRelation.Enter += new System.EventHandler(this.gbRelation_Enter);
+           
             // 
             // ViewRelation
             // 

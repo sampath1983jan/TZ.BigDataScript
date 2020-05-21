@@ -8,6 +8,8 @@ using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
 using TZ.CompExtention.Builder.Data;
+using TZ.ImportDesk.Properties;
+
 namespace TZ.ImportDesk
 {
     public partial class TalentozComponent : Form
@@ -16,17 +18,29 @@ namespace TZ.ImportDesk
         {
             InitializeComponent();
         }
+
+        public TalentozComponent(int clientID,string conn)
+        {
+            connection = conn;
+            ClientID = clientID;
+            InitializeComponent();
+        }
+
         Int32 ClientID;
-        string connection = "Server=183.82.34.174;Initial Catalog=talentozdev;Uid=admin;Pwd=admin312";
+        string connection = "" ;
         DataTable dtComponentInstance = new DataTable();
         List<TZ.CompExtention.Builder.TalentozComponent> TZComponents = new List<CompExtention.Builder.TalentozComponent>();
         string ComponentName = "";
         private void TalentozComponent_Load(object sender, EventArgs e)
-        {
-            bindClients();
+        {             
             GetComponentList();
         }
-
+        public void UpdateChanges(string conn, int c) {
+            connection = conn;
+            ClientID = c;
+            TZComponents = new List<CompExtention.Builder.TalentozComponent>();
+            GetComponentList();
+        }
         private void bindFields() {
             lvComponentAttribute.Items.Clear();
            var c= TZComponents.Where(x => x.ComponentName == ComponentName).FirstOrDefault();
@@ -47,35 +61,24 @@ namespace TZ.ImportDesk
             }            
         }
         private void GetComponentList() {
-            DataTable dtComp = new DataTable();
-            dtComponentInstance = CompExtention.Shared.GetComponentList(ClientID, connection);
-            dtComp = dtComponentInstance.DefaultView.ToTable(true, "CompType", "CompAttribute");
-            lstComponentList.Items.Clear();
-            foreach (DataRow s in dtComp.Rows)
-            {
-                var ft = s["CompType"];
-                TZ.CompExtention.Builder.TalentozComponent comp =
-                     Newtonsoft.Json.JsonConvert.DeserializeObject<TZ.CompExtention.Builder.TalentozComponent>(s["CompAttribute"].ToString());
-                comp.ComponentID = Convert.ToInt32( ft);
-                TZComponents.Add(comp);
-                 var li = new ListViewItem(comp.ComponentName);
-                lstComponentList.Items.Add(li);
-            }
+            if (connection != "") {
+                DataTable dtComp = new DataTable();
+                dtComponentInstance = CompExtention.Shared.GetComponentList(ClientID, connection);
+                dtComp = dtComponentInstance.DefaultView.ToTable(true, "CompType", "CompAttribute");
+                lstComponentList.Items.Clear();
+                foreach (DataRow s in dtComp.Rows)
+                {
+                    var ft = s["CompType"];
+                    TZ.CompExtention.Builder.TalentozComponent comp =
+                         Newtonsoft.Json.JsonConvert.DeserializeObject<TZ.CompExtention.Builder.TalentozComponent>(s["CompAttribute"].ToString());
+                    comp.ComponentID = Convert.ToInt32(ft);
+                    TZComponents.Add(comp);
+                    var li = new ListViewItem(comp.ComponentName);
+                    lstComponentList.Items.Add(li);
+                }
+            }            
         }
-        private void bindClients()
-        {
-            DataTable dtClient = new DataTable();
-            dtClient = CompExtention.Shared.GetClientList(connection);
-            cmbClients.ValueMember = "ClientID";
-            cmbClients.DisplayMember = "CustomerName";
-            cmbClients.DataSource = dtClient;
-        }
-
-        private void cmbClients_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            DataRowView dr = (DataRowView)cmbClients.SelectedItem;
-            ClientID = Convert.ToInt32(dr.Row["ClientID"]);
-        }
+      
 
         private void lstComponentList_SelectedIndexChanged(object sender, EventArgs e)
         {
@@ -88,6 +91,7 @@ namespace TZ.ImportDesk
 
         private void btnImportComponent_Click(object sender, EventArgs e)
         {
+            
             // TZ.CompExtention.Component
             //TZComponents
             DataTable dtLookUpComponent = new DataTable();
@@ -338,6 +342,5 @@ namespace TZ.ImportDesk
             }
                 MessageBox.Show("done");
         }
-      
     }
 }

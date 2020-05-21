@@ -14,6 +14,9 @@ namespace TZ.CompExtention.ImportTemplate
         public bool IsPivot { get; set; }
         public bool IsDefault { get; set; }
         public bool IsRequired { get; set; }
+        public bool IsRow { get; set; }
+        public bool IsColumn { get; set; }
+        
         public TemplateField() {
             Field = new Attribute();
             ID = "";
@@ -21,6 +24,10 @@ namespace TZ.CompExtention.ImportTemplate
             IsPivot = false;
             IsDefault = false;
             IsRequired = false;
+            IsColumn = false;
+            IsRow = false;
+           
+
         }
 
     }

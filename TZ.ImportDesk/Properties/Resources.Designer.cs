@@ -59,5 +59,14 @@ namespace TZ.ImportDesk.Properties {
                 resourceCulture = value;
             }
         }
+        
+        /// <summary>
+        ///   Looks up a localized string similar to Server=183.82.34.174;Initial Catalog=talentozdev;Uid=admin;Pwd=admin312.
+        /// </summary>
+        internal static string connection {
+            get {
+                return ResourceManager.GetString("connection", resourceCulture);
+            }
+        }
     }
 }

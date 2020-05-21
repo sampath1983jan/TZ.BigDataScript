@@ -18,5 +18,8 @@ namespace TZ.CompExtention
         List<Component> GetComponents();
         Component GetComponent(string id);
         bool UpdateComponentLookup(int clientID, string componentID, string attributeID, string componentLookUp, string displayName);
+
+        bool SaveAttribute(string compID, Attribute att);
+        bool UpdateAttribute(string compID, Attribute att);
     }
 }

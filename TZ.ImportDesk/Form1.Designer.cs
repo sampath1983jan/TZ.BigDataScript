@@ -33,7 +33,8 @@
             this.lbFile = new System.Windows.Forms.Label();
             this.lblStatus = new System.Windows.Forms.Label();
             this.button4 = new System.Windows.Forms.Button();
-            this.textBox1 = new System.Windows.Forms.TextBox();
+            this.txtConnection = new System.Windows.Forms.TextBox();
+            this.btnClear = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // opDiaglog
@@ -50,7 +51,7 @@
             // 
             // lbFile
             // 
-            this.lbFile.Location = new System.Drawing.Point(34, 191);
+            this.lbFile.Location = new System.Drawing.Point(72, 459);
             this.lbFile.Name = "lbFile";
             this.lbFile.Size = new System.Drawing.Size(437, 44);
             this.lbFile.TabIndex = 4;
@@ -66,27 +67,41 @@
             // button4
             // 
             this.button4.Font = new System.Drawing.Font("Microsoft Sans Serif", 24F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button4.Location = new System.Drawing.Point(188, 287);
+            this.button4.Location = new System.Drawing.Point(65, 203);
             this.button4.Name = "button4";
-            this.button4.Size = new System.Drawing.Size(428, 61);
+            this.button4.Size = new System.Drawing.Size(319, 61);
             this.button4.TabIndex = 8;
             this.button4.Text = "Setup Import Schema";
             this.button4.UseVisualStyleBackColor = true;
             this.button4.Click += new System.EventHandler(this.button4_Click);
             // 
-            // textBox1
+            // txtConnection
             // 
-            this.textBox1.Location = new System.Drawing.Point(65, 120);
-            this.textBox1.Name = "textBox1";
-            this.textBox1.Size = new System.Drawing.Size(665, 22);
-            this.textBox1.TabIndex = 9;
+            this.txtConnection.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtConnection.Location = new System.Drawing.Point(65, 120);
+            this.txtConnection.Name = "txtConnection";
+            this.txtConnection.Size = new System.Drawing.Size(665, 26);
+            this.txtConnection.TabIndex = 9;
+            // 
+            // btnClear
+            // 
+            this.btnClear.AccessibleDescription = "bt";
+            this.btnClear.Font = new System.Drawing.Font("Microsoft Sans Serif", 24F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnClear.Location = new System.Drawing.Point(411, 203);
+            this.btnClear.Name = "btnClear";
+            this.btnClear.Size = new System.Drawing.Size(319, 61);
+            this.btnClear.TabIndex = 10;
+            this.btnClear.Text = "Clear";
+            this.btnClear.UseVisualStyleBackColor = true;
+            this.btnClear.Click += new System.EventHandler(this.btnClear_Click);
             // 
             // Form1
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.ClientSize = new System.Drawing.Size(800, 696);
-            this.Controls.Add(this.textBox1);
+            this.Controls.Add(this.btnClear);
+            this.Controls.Add(this.txtConnection);
             this.Controls.Add(this.button4);
             this.Controls.Add(this.lblStatus);
             this.Controls.Add(this.lbFile);
@@ -106,7 +121,8 @@
         private System.Windows.Forms.Label lbFile;
         private System.Windows.Forms.Label lblStatus;
         private System.Windows.Forms.Button button4;
-        private System.Windows.Forms.TextBox textBox1;
+        private System.Windows.Forms.TextBox txtConnection;
+        private System.Windows.Forms.Button btnClear;
     }
 }
 

@@ -78,8 +78,6 @@
             this.txtDefaultValue = new System.Windows.Forms.TextBox();
             this.label16 = new System.Windows.Forms.Label();
             this.label17 = new System.Windows.Forms.Label();
-            this.cmbClients = new System.Windows.Forms.ComboBox();
-            this.label18 = new System.Windows.Forms.Label();
             this.btnSaveAttribute = new System.Windows.Forms.Button();
             this.label19 = new System.Windows.Forms.Label();
             this.txtComponentName = new System.Windows.Forms.TextBox();
@@ -92,12 +90,12 @@
             this.label23 = new System.Windows.Forms.Label();
             this.btnReset = new System.Windows.Forms.Button();
             this.gbAttributes = new System.Windows.Forms.GroupBox();
+            this.label24 = new System.Windows.Forms.Label();
+            this.txtEntityKey = new System.Windows.Forms.TextBox();
             this.cmbType = new System.Windows.Forms.ComboBox();
             this.label22 = new System.Windows.Forms.Label();
             this.btnCancel = new System.Windows.Forms.Button();
             this.lblMsg = new System.Windows.Forms.Label();
-            this.label24 = new System.Windows.Forms.Label();
-            this.txtEntityKey = new System.Windows.Forms.TextBox();
             this.cntxCompType.SuspendLayout();
             this.gbTableList.SuspendLayout();
             this.gbField.SuspendLayout();
@@ -115,10 +113,10 @@
             this.lstTableList.FullRowSelect = true;
             this.lstTableList.GridLines = true;
             this.lstTableList.HideSelection = false;
-            this.lstTableList.Location = new System.Drawing.Point(26, 148);
+            this.lstTableList.Location = new System.Drawing.Point(26, 87);
             this.lstTableList.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.lstTableList.Name = "lstTableList";
-            this.lstTableList.Size = new System.Drawing.Size(420, 458);
+            this.lstTableList.Size = new System.Drawing.Size(420, 519);
             this.lstTableList.TabIndex = 3;
             this.lstTableList.UseCompatibleStateImageBehavior = false;
             this.lstTableList.View = System.Windows.Forms.View.Details;
@@ -239,10 +237,10 @@
             // txtSearch
             // 
             this.txtSearch.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtSearch.Location = new System.Drawing.Point(142, 96);
+            this.txtSearch.Location = new System.Drawing.Point(143, 42);
             this.txtSearch.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
             this.txtSearch.Name = "txtSearch";
-            this.txtSearch.Size = new System.Drawing.Size(279, 26);
+            this.txtSearch.Size = new System.Drawing.Size(302, 26);
             this.txtSearch.TabIndex = 2;
             this.txtSearch.TextChanged += new System.EventHandler(this.txtSearch_TextChanged);
             // 
@@ -252,7 +250,7 @@
             this.label1.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.label1.ForeColor = System.Drawing.Color.DimGray;
-            this.label1.Location = new System.Drawing.Point(22, 94);
+            this.label1.Location = new System.Drawing.Point(41, 42);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(62, 20);
             this.label1.TabIndex = 3;
@@ -595,30 +593,6 @@
             this.label17.TabIndex = 35;
             this.label17.Text = "Comp Display";
             // 
-            // cmbClients
-            // 
-            this.cmbClients.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.cmbClients.FormattingEnabled = true;
-            this.cmbClients.Location = new System.Drawing.Point(142, 59);
-            this.cmbClients.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.cmbClients.Name = "cmbClients";
-            this.cmbClients.Size = new System.Drawing.Size(279, 28);
-            this.cmbClients.TabIndex = 1;
-            this.cmbClients.SelectedIndexChanged += new System.EventHandler(this.cmbClients_SelectedIndexChanged);
-            // 
-            // label18
-            // 
-            this.label18.AutoSize = true;
-            this.label18.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
-            this.label18.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label18.ForeColor = System.Drawing.Color.DimGray;
-            this.label18.Location = new System.Drawing.Point(22, 60);
-            this.label18.Name = "label18";
-            this.label18.Size = new System.Drawing.Size(114, 20);
-            this.label18.TabIndex = 38;
-            this.label18.Text = "Choose Client";
-            this.label18.Click += new System.EventHandler(this.label18_Click);
-            // 
             // btnSaveAttribute
             // 
             this.btnSaveAttribute.BackColor = System.Drawing.Color.MediumSlateBlue;
@@ -708,8 +682,6 @@
             this.gbTableList.Controls.Add(this.lstTableList);
             this.gbTableList.Controls.Add(this.txtSearch);
             this.gbTableList.Controls.Add(this.label1);
-            this.gbTableList.Controls.Add(this.cmbClients);
-            this.gbTableList.Controls.Add(this.label18);
             this.gbTableList.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.gbTableList.ForeColor = System.Drawing.Color.DimGray;
             this.gbTableList.Location = new System.Drawing.Point(12, 80);
@@ -808,6 +780,28 @@
             this.gbAttributes.TabStop = false;
             this.gbAttributes.Text = "Component & Attribute List";
             // 
+            // label24
+            // 
+            this.label24.AutoSize = true;
+            this.label24.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.label24.ForeColor = System.Drawing.Color.DimGray;
+            this.label24.Location = new System.Drawing.Point(83, 122);
+            this.label24.Name = "label24";
+            this.label24.Size = new System.Drawing.Size(89, 20);
+            this.label24.TabIndex = 45;
+            this.label24.Text = "Entity Key ";
+            // 
+            // txtEntityKey
+            // 
+            this.txtEntityKey.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.txtEntityKey.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
+            this.txtEntityKey.Location = new System.Drawing.Point(186, 119);
+            this.txtEntityKey.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
+            this.txtEntityKey.Name = "txtEntityKey";
+            this.txtEntityKey.Size = new System.Drawing.Size(330, 26);
+            this.txtEntityKey.TabIndex = 44;
+            this.txtEntityKey.TextChanged += new System.EventHandler(this.txtEntityKey_TextChanged);
+            // 
             // cmbType
             // 
             this.cmbType.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
@@ -856,28 +850,6 @@
             this.lblMsg.Size = new System.Drawing.Size(0, 18);
             this.lblMsg.TabIndex = 42;
             // 
-            // label24
-            // 
-            this.label24.AutoSize = true;
-            this.label24.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label24.ForeColor = System.Drawing.Color.DimGray;
-            this.label24.Location = new System.Drawing.Point(83, 122);
-            this.label24.Name = "label24";
-            this.label24.Size = new System.Drawing.Size(89, 20);
-            this.label24.TabIndex = 45;
-            this.label24.Text = "Entity Key ";
-            // 
-            // txtEntityKey
-            // 
-            this.txtEntityKey.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtEntityKey.ForeColor = System.Drawing.Color.FromArgb(((int)(((byte)(64)))), ((int)(((byte)(64)))), ((int)(((byte)(64)))));
-            this.txtEntityKey.Location = new System.Drawing.Point(186, 119);
-            this.txtEntityKey.Margin = new System.Windows.Forms.Padding(3, 4, 3, 4);
-            this.txtEntityKey.Name = "txtEntityKey";
-            this.txtEntityKey.Size = new System.Drawing.Size(330, 26);
-            this.txtEntityKey.TabIndex = 44;
-            this.txtEntityKey.TextChanged += new System.EventHandler(this.txtEntityKey_TextChanged);
-            // 
             // ComponentBuilder
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
@@ -899,6 +871,7 @@
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Component Builder";
             this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
+            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.ComponentBuilder_FormClosed);
             this.Load += new System.EventHandler(this.ComponentBuilder_Load);
             this.PreviewKeyDown += new System.Windows.Forms.PreviewKeyDownEventHandler(this.ComponentBuilder_PreviewKeyDown);
             this.cntxCompType.ResumeLayout(false);
@@ -954,8 +927,6 @@
         private System.Windows.Forms.TextBox txtDefaultValue;
         private System.Windows.Forms.Label label16;
         private System.Windows.Forms.Label label17;
-        private System.Windows.Forms.ComboBox cmbClients;
-        private System.Windows.Forms.Label label18;
         private System.Windows.Forms.Button btnSaveAttribute;
         private System.Windows.Forms.Label label19;
         private System.Windows.Forms.TextBox txtComponentName;

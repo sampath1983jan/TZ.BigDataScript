@@ -31,8 +31,7 @@ namespace TZ.CompExtention
                     comp.TableName = s;
                     CompList.Add(comp);
                 }
-            }
-            
+            }            
             return CompList.OrderBy(x => x.TableName).ToList();
         }
 

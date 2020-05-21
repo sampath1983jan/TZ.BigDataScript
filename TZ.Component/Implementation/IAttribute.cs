@@ -28,5 +28,6 @@ namespace TZ.CompExtention
         int Max { get; set; }
           string LookupDisplayField { get; set; }
           string ComponentLookupDisplayField { get; set; }
+        bool IsCustomField { get; set; }
     }
 }

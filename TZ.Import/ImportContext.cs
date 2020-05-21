@@ -100,7 +100,7 @@ namespace TZ.Import
             Connection = con;
         }
         private void LoadImportTemplate() {
-        Template = new CompExtention.ImportTemplate.Template(this.ImportTemplateID,this.Connection);
+        Template = new CompExtention.ImportTemplate.Template(this.ImportTemplateID, ClientID, this.Connection);
         }
 
         public   List<ImportDataStatus> GetComponentStatus(string LogPath) {
@@ -127,9 +127,11 @@ namespace TZ.Import
                     }
                 } 
             }
-         ComponentViewManager cv = new ComponentViewManager(Template.ViewID,ClientID, new CompExtention.DataAccess.ComponentViewHandler(this.Connection,this.ClientID));
-         this.View=(ComponentView)cv.View;
-            Template.View = this.View;
+            Template.LoadView(ClientID);
+            this.View = Template.View;
+        // ComponentViewManager cv = new ComponentViewManager(Template.ViewID,ClientID, new CompExtention.DataAccess.ComponentViewHandler(this.Connection,this.ClientID));
+        // this.View=(ComponentView)cv.View;
+        //    Template.View = this.View;
 
         }
     }

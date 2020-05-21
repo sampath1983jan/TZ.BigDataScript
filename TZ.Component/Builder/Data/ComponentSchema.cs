@@ -27,7 +27,32 @@ namespace TZ.CompExtention.Builder
         }
         public class TalentozSchemaInfo
         {
-            public const string Table = "tz_schemainfo";
+            public const string Table = "tz_schemainfo";   
+            public static readonly DBColumn AttributeName = DBColumn.Column("AttributeName", System.Data.DbType.String, 255, DBColumnFlags.Nullable);
+            public static readonly DBColumn DisplayName = DBColumn.Column("DisplayName", System.Data.DbType.String, 255, DBColumnFlags.Nullable);
+            public static readonly DBColumn ComponentID = DBColumn.Column("ComponentID", System.Data.DbType.String, 255);
+            public static readonly DBColumn FieldID = DBColumn.Column("FieldID", System.Data.DbType.String, 255);
+            public static readonly DBColumn IsRequired = DBColumn.Column("IsRequired", System.Data.DbType.Boolean, 255, DBColumnFlags.Nullable);
+            public static readonly DBColumn IsUnique = DBColumn.Column("IsUnique", System.Data.DbType.Boolean, 255, DBColumnFlags.Nullable);
+            public static readonly DBColumn IsCore = DBColumn.Column("IsCore", System.Data.DbType.Boolean, 255, DBColumnFlags.Nullable);
+            public static readonly DBColumn IsReadOnly = DBColumn.Column("IsReadOnly", System.Data.DbType.Boolean, DBColumnFlags.Nullable);
+            public static readonly DBColumn IsSecured = DBColumn.Column("IsSecured", System.Data.DbType.Boolean, 555, DBColumnFlags.Nullable);
+            public static readonly DBColumn LookUpID = DBColumn.Column("LookUpID", System.Data.DbType.String, 255, DBColumnFlags.Nullable);
+            public static readonly DBColumn AttributeType = DBColumn.Column("AttributeType", System.Data.DbType.Int32, 555, DBColumnFlags.Nullable);
+            public static readonly DBColumn Length = DBColumn.Column("Length", System.Data.DbType.Int32, 100000000, DBColumnFlags.Nullable);
+            public static readonly DBColumn DefaultValue = DBColumn.Column("DefaultValue", System.Data.DbType.String, 555, DBColumnFlags.Nullable);
+            public static readonly DBColumn FileExtension = DBColumn.Column("FileExtension", System.Data.DbType.String, 255, DBColumnFlags.Nullable);
+            public static readonly DBColumn RegExp = DBColumn.Column("RegExp", System.Data.DbType.String, 255, DBColumnFlags.Nullable);
+            public static readonly DBColumn IsNullable = DBColumn.Column("IsNullable", System.Data.DbType.Boolean, DBColumnFlags.Nullable);
+            public static readonly DBColumn ISPrimaryKey = DBColumn.Column("ISPrimaryKey", System.Data.DbType.Boolean, DBColumnFlags.Nullable);
+            public static readonly DBColumn LookupComponent = DBColumn.Column("LookupComponentID", System.Data.DbType.String, 255, DBColumnFlags.Nullable);
+            public static readonly DBColumn ComponentLookupDisplayName = DBColumn.Column("ComponentLookupDisplayName", System.Data.DbType.String, 255, DBColumnFlags.Nullable);
+            public static readonly DBColumn IsAuto = DBColumn.Column("IsAuto", System.Data.DbType.Boolean, DBColumnFlags.Nullable);
+            public static readonly DBColumn LastUPD = DBColumn.Column("LastUPD", System.Data.DbType.DateTime, DBColumnFlags.Nullable);
+        }
+        public class TalentozSchemaClientInfo
+        {
+            public const string Table = "tz_schemaclientinfo";
             public static readonly DBColumn ClientID = DBColumn.Column("ClientID", System.Data.DbType.Int32, 255, DBColumnFlags.Nullable);
             public static readonly DBColumn AttributeName = DBColumn.Column("AttributeName", System.Data.DbType.String, 255, DBColumnFlags.Nullable);
             public static readonly DBColumn DisplayName = DBColumn.Column("DisplayName", System.Data.DbType.String, 255, DBColumnFlags.Nullable);
@@ -84,6 +109,7 @@ namespace TZ.CompExtention.Builder
             
             public const string Table = "tz_importTemplate";
             public static readonly DBColumn TemplateID = DBColumn.Column("TemplateID", System.Data.DbType.String, 255, DBColumnFlags.Nullable);
+            public static readonly DBColumn ClientID = DBColumn.Column("ClientID", System.Data.DbType.Int32, 255, DBColumnFlags.Nullable);
             public static readonly DBColumn ViewID = DBColumn.Column("ViewID", System.Data.DbType.String, 255, DBColumnFlags.Nullable);
             public static readonly DBColumn TemplateCode = DBColumn.Column("TemplateCode", System.Data.DbType.String, 255, DBColumnFlags.Nullable);
             public static readonly DBColumn  Name = DBColumn.Column("Name", System.Data.DbType.String, 255, DBColumnFlags.Nullable);

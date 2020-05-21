@@ -23,10 +23,13 @@ namespace TZ.CompExtention.Builder.Data
             DBQuery[] all = new DBQuery[] {
             DBQuery.Drop.Table(base.Schema, Builder.Schema.TalentozSchema.Table).IfExists(),
             DBQuery.Drop.Table(base.Schema, Builder.Schema.TalentozSchemaInfo.Table).IfExists(),
+                 DBQuery.Drop.Table(base.Schema, Builder.Schema.TalentozSchemaClientInfo.Table).IfExists(),
             DBQuery.Drop.Table(base.Schema, Builder.Schema.TalentozView.Table).IfExists(),
             DBQuery.Drop.Table(base.Schema, Builder.Schema.TalentozViewSchema.Table).IfExists(),
            DBQuery.Drop.Table(base.Schema, Builder.Schema.TalentozTemplate.Table).IfExists()     ,
-             DBQuery.Drop.Table(base.Schema, Builder.Schema.TalentozViewSchemaRelation.Table).IfExists()
+             DBQuery.Drop.Table(base.Schema, Builder.Schema.TalentozViewSchemaRelation.Table).IfExists(),
+             DBQuery.Drop.Table(base.Schema, Builder.Schema.TalentozImportLog.Table).IfExists()
+             
             };
             foreach (DBQuery q in all)
             {
@@ -106,8 +109,7 @@ namespace TZ.CompExtention.Builder.Data
             if (table == null)
             {
                 DBQuery create;
-                create = DBQuery.Create.Table(base.Schema, Builder.Schema.TalentozSchemaInfo.Table)
-                                        .Add(Builder.Schema.TalentozSchemaInfo.ClientID)
+                create = DBQuery.Create.Table(base.Schema, Builder.Schema.TalentozSchemaInfo.Table)                                      
                                           .Add(Builder.Schema.TalentozSchemaInfo.ComponentID)
                                         .Add(Builder.Schema.TalentozSchemaInfo.FieldID)
                                         .Add(Builder.Schema.TalentozSchemaInfo.AttributeName)
@@ -131,12 +133,49 @@ namespace TZ.CompExtention.Builder.Data
                                         .Add(Builder.Schema.TalentozSchemaInfo.LastUPD);
                 //.Add(TzAccount.Client.ServerID)    .Add(Builder.Schema.TalentozSchema.OrganizationName);
                 db.ExecuteNonQuery(create);
-                CreatePrimaryKeys (Builder.Schema.TalentozSchemaInfo.ClientID.Name + "," +Builder.Schema.TalentozSchemaInfo.ComponentID.Name +","+ Builder.Schema.TalentozSchemaInfo.FieldID.Name
+                CreatePrimaryKeys (Builder.Schema.TalentozSchemaInfo.ComponentID.Name +","+ Builder.Schema.TalentozSchemaInfo.FieldID.Name
                     , Builder.Schema.TalentozSchemaInfo.Table);
             }
             else
             {
                 throw new System.Exception(Builder.Schema.TalentozSchemaInfo.Table + "  table Name exist");
+            }
+
+            table = tables.Where(x => x.Name.ToLower() == Builder.Schema.TalentozSchemaClientInfo.Table.ToLower()).FirstOrDefault();
+            if (table == null)
+            {
+                DBQuery create;
+                create = DBQuery.Create.Table(base.Schema, Builder.Schema.TalentozSchemaClientInfo.Table)
+                                        .Add(Builder.Schema.TalentozSchemaClientInfo.ClientID)
+                                          .Add(Builder.Schema.TalentozSchemaClientInfo.ComponentID)
+                                        .Add(Builder.Schema.TalentozSchemaClientInfo.FieldID)
+                                        .Add(Builder.Schema.TalentozSchemaClientInfo.AttributeName)
+                                             .Add(Builder.Schema.TalentozSchemaClientInfo.DisplayName)
+                                        .Add(Builder.Schema.TalentozSchemaClientInfo.IsRequired)
+                                        .Add(Builder.Schema.TalentozSchemaClientInfo.IsUnique)
+                                        .Add(Builder.Schema.TalentozSchemaClientInfo.IsCore)
+                                        .Add(Builder.Schema.TalentozSchemaClientInfo.IsReadOnly)
+                                        .Add(Builder.Schema.TalentozSchemaClientInfo.IsSecured)
+                                        .Add(Builder.Schema.TalentozSchemaClientInfo.IsNullable)
+                                        .Add(Builder.Schema.TalentozSchemaClientInfo.ISPrimaryKey)
+                                        .Add(Builder.Schema.TalentozSchemaClientInfo.IsAuto)
+                                        .Add(Builder.Schema.TalentozSchemaClientInfo.LookUpID)
+                                        .Add(Builder.Schema.TalentozSchemaClientInfo.AttributeType)
+                                        .Add(Builder.Schema.TalentozSchemaClientInfo.Length)
+                                        .Add(Builder.Schema.TalentozSchemaClientInfo.DefaultValue)
+                                        .Add(Builder.Schema.TalentozSchemaClientInfo.FileExtension)
+                                        .Add(Builder.Schema.TalentozSchemaClientInfo.LookupComponent)
+                                        .Add(Builder.Schema.TalentozSchemaClientInfo.ComponentLookupDisplayName)
+                                        .Add(Builder.Schema.TalentozSchemaClientInfo.RegExp)
+                                        .Add(Builder.Schema.TalentozSchemaClientInfo.LastUPD);
+                //.Add(TzAccount.Client.ServerID)    .Add(Builder.Schema.TalentozSchema.OrganizationName);
+                db.ExecuteNonQuery(create);
+                CreatePrimaryKeys(Builder.Schema.TalentozSchemaClientInfo.ClientID.Name + "," + Builder.Schema.TalentozSchemaClientInfo.ComponentID.Name + "," + Builder.Schema.TalentozSchemaClientInfo.FieldID.Name
+                    , Builder.Schema.TalentozSchemaClientInfo.Table);
+            }
+            else
+            {
+                throw new System.Exception(Builder.Schema.TalentozSchemaClientInfo.Table + "  table Name exist");
             }
 
             table = tables.Where(x => x.Name.ToLower() == Builder.Schema.TalentozView.Table.ToLower()).FirstOrDefault();
@@ -205,6 +244,7 @@ namespace TZ.CompExtention.Builder.Data
             {
                 DBQuery create;
                 create = DBQuery.Create.Table(base.Schema, Builder.Schema.TalentozTemplate.Table)
+                      .Add(Builder.Schema.TalentozTemplate.ClientID )
                                         .Add(Builder.Schema.TalentozTemplate.TemplateID)
                                           .Add(Builder.Schema.TalentozTemplate.Name)
                                         .Add(Builder.Schema.TalentozTemplate.TemplateCode)
@@ -215,7 +255,7 @@ namespace TZ.CompExtention.Builder.Data
                                         .Add(Builder.Schema.TalentozTemplate.ViewID)                                         
                                         .Add(Builder.Schema.TalentozTemplate.LastUPD);               
                 db.ExecuteNonQuery(create);
-                CreatePrimaryKeys(  Builder.Schema.TalentozTemplate.TemplateID.Name
+                CreatePrimaryKeys(Builder.Schema.TalentozSchemaClientInfo.ClientID.Name + "," + Builder.Schema.TalentozTemplate.TemplateID.Name
                     , Builder.Schema.TalentozTemplate.Table);
             }
             else

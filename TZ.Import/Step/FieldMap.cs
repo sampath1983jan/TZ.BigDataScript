@@ -41,22 +41,35 @@ namespace TZ.Import.Step
         public override ImportError Validate()
         {
             var context = this.Context;
+            if (context.View == null) {
+                context.LoadComponentView();
+            }
             List<ComponentRelation > components = context.View.ComponentRelations;
             var errorstring = "";
             List<string> comp = new List<string>();
-            comp.Add(context.View.CoreComponent);
-            foreach (ComponentRelation vc in context.View.ComponentRelations)
+            List<CompExtention.Attribute> ViewAttributes= new List<CompExtention.Attribute>();
+            if (this.Context.Template.Type == CompExtention.ImportTemplate.Template.TemplateType.DIRECT)
             {
-                if (context.View.CoreComponent != vc.ComponentID)
+                comp.Add(context.View.CoreComponent);
+                foreach (ComponentRelation vc in context.View.ComponentRelations)
                 {
-                    comp.Add(vc.ComponentID);
+                    if (context.View.CoreComponent != vc.ComponentID)
+                    {
+                        comp.Add(vc.ComponentID);
+                    }
+                    if (context.View.CoreComponent != vc.ChildComponentID)
+                    {
+                        comp.Add(vc.ChildComponentID);
+                    }
                 }
-                if (context.View.CoreComponent != vc.ChildComponentID)
-                {
-                    comp.Add(vc.ChildComponentID);              
-                }
+                ViewAttributes = CompExtention.ComponentManager.GetComponentAttributes(string.Join(",", comp.ToArray()), this.Context.ClientID, new CompExtention.DataAccess.ComponentDataHandler(this.Context.Connection));
+
             }
-         var   ViewAttributes = CompExtention.ComponentManager.GetComponentAttributes(string.Join(",", comp.ToArray()), this.Context.ClientID, new CompExtention.DataAccess.ComponentDataHandler(this.Context.Connection));
+            else {
+                foreach (Component c in context.View.Components) {
+                    ViewAttributes.AddRange(c.Attributes.ToArray());
+                }               
+            }
 
             foreach (ImportFieldMap ifm in this.Context.ImportFields)
             {

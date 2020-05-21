@@ -37,6 +37,10 @@ namespace TZ.CompExtention
         /// </summary>
         system,
         /// <summary>
+        /// it is not pure component it is act as core component which is derived from or link from core component
+        /// </summary>
+        pseudocore,
+        /// <summary>
         /// it is not table
         /// </summary>
         none
@@ -103,9 +107,9 @@ namespace TZ.CompExtention
             return new Attribute() { ClientID = clientID};
         }
         public void AddAttribute(IAttribute att) {
+            att.IsCustomField = true;
             this.Attributes.Add((Attribute) att);
-        }
-       
+        }       
     }
 }
 

@@ -51,7 +51,7 @@ namespace TZ.ImportDesk
             }
             if (index != 0)
             {
-                var r = new ViewRelation(co);
+                var r = new ViewRelation(co,connection);
                 r.Name = "r_" + index;
                 r.Location = new Point(10, 20 + h);
                 r.Height = defaultHeight;
@@ -61,7 +61,7 @@ namespace TZ.ImportDesk
             }
             else
             {
-                var r = new ViewRelation(co);
+                var r = new ViewRelation(co, connection);
                 r.Name = "r_" + index;
                 r.Location = new Point(10, 20);
                 r.Height = defaultHeight;

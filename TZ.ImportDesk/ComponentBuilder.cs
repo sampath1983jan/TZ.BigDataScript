@@ -15,9 +15,17 @@ namespace TZ.ImportDesk
         {
             InitializeComponent();
         }
-        public string SelectedTable;
 
-        int ClientID;
+        private int ClientID { get; set; }
+        public ComponentBuilder(int clientID,string conn)
+        {
+            ClientID = clientID;
+            connection = conn;
+            InitializeComponent();
+        }
+
+        public string SelectedTable;
+   
         //List<string> tbls;
         //List<CompExtention.Attribute> attributes = new List<CompExtention.Attribute>();
         IDictionary<int, string> d = new Dictionary<int, string>();
@@ -43,10 +51,11 @@ namespace TZ.ImportDesk
         "transaction",
         "configuration",
         "system",
+        "pseudocore",
        "none"
         };
 
-        string connection = "Server=183.82.34.174;Initial Catalog=talentozdev;Uid=admin;Pwd=admin312";
+        string connection = "";
         List<CompExtention.Component> CompWithTableList = new List<CompExtention.Component>();
         
                     List<CompExtention.Component> CompList = new List<CompExtention.Component>();
@@ -57,13 +66,13 @@ namespace TZ.ImportDesk
         Dictionary<int, string> CompType = new Dictionary<int, string>();
         CompExtention.Component component;
         TZ.CompExtention.ComponentManager cm;
-        private void MyForm_KeyDown(object sender, KeyEventArgs e)
-        {
-           
-        }
-
+       
         private void ComponentBuilder_Load(object sender, EventArgs e)
         {
+            Render();
+        }
+        public void Render() {
+            CompType = new Dictionary<int, string>();
             int index = 0;
             foreach (string i in componentType)
             {
@@ -71,30 +80,26 @@ namespace TZ.ImportDesk
                 index = index + 1;
             }
             //component = new CompExtention.Component();
-
             //  TZ.CompExtention.Shared.ExecuteSetup(" Server=183.82.34.174;Initial Catalog=talentozdev;Uid=admin;Pwd=admin312");
             TZ.CompExtention.ComponentBuilder cb = new CompExtention.ComponentBuilder(connection);
-            CompWithTableList= cb.GetTableAsComponent();
+            CompWithTableList = cb.GetTableAsComponent();
             bindList(CompWithTableList);
-            bindClients();
+            //   bindClients();
             bindAttributeType();
             //bindLookup();
-           bindComponentList();
+            bindComponentList();
             cmbLookUp.Enabled = false;
             bindComponentCombo();
             bindComponentType();
             gbField.Enabled = true;
             gbAttributes.Enabled = true;
-            btnSaveComponent.Visible = true;           
+            btnSaveComponent.Visible = true;
             btnCancel.Visible = true;
         }
-        private void bindClients()
-        {
-            DataTable dtClient = new DataTable();
-            dtClient = CompExtention.Shared.GetClientList(connection);
-            cmbClients.ValueMember = "ClientID";
-            cmbClients.DisplayMember = "CustomerName";
-            cmbClients.DataSource = dtClient;
+        public void UpdateChanges(string conn, int clientID) {
+            connection = conn;
+            ClientID = clientID;
+           
         }
         private void bindComponentList()
         {
@@ -136,7 +141,7 @@ namespace TZ.ImportDesk
         {
             if (dtLookup.Rows.Count == 0)
             {
-                dtLookup = CompExtention.Shared.GetLookup(ClientID, " Server=183.82.34.174;Initial Catalog=talentozdev;Uid=admin;Pwd=admin312");
+                dtLookup = CompExtention.Shared.GetLookup(ClientID, connection);
                 dtLookup.DefaultView.Sort = "Name";
                 dtLookup = dtLookup.DefaultView.ToTable();
             }
@@ -184,7 +189,7 @@ namespace TZ.ImportDesk
         }
             private void SetComponentAndAttribute() {
             var ecomp = CompWithTableList.Where(x => x.TableName == SelectedTable).FirstOrDefault();
-            TZ.CompExtention.ComponentBuilder cb = new CompExtention.ComponentBuilder(" Server=183.82.34.174;Initial Catalog=talentozdev;Uid=admin;Pwd=admin312");
+            TZ.CompExtention.ComponentBuilder cb = new CompExtention.ComponentBuilder(connection);
                 if (ecomp.Type != CompExtention.ComponentType.none)
                 {
 
@@ -210,8 +215,23 @@ namespace TZ.ImportDesk
              
         }
         private void SetExistComponent() {
+            TZ.CompExtention.ComponentBuilder cb = new CompExtention.ComponentBuilder(connection);
             cm = new CompExtention.ComponentManager(ClientID, SelectedTable, new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
             cm.LoadAttributes();
+
+            if (cm.Component.Attributes.Count == 0)
+            {
+                cm.Component.Attributes = cb.GetTableFields(SelectedTable, ClientID);
+            }
+            else if (cm.Component.Attributes.Count > 0) { 
+            var TableAtt= cb.GetTableFields(SelectedTable, ClientID);
+                foreach (CompExtention. Attribute a in TableAtt) {
+                var tAtt=    cm.Component.Attributes.Where(x => x.Name == a.Name).FirstOrDefault();
+                    if (tAtt == null) {
+                        cm.Component.Attributes.Add(a);
+                    }
+                }
+            }
             cmbType.SelectedItem = CompType.Where(x => x.Key == (int)cm.Component.Type).FirstOrDefault();
             component = (CompExtention.Component)cm.Component;
             bindAttributeList();
@@ -246,7 +266,9 @@ namespace TZ.ImportDesk
             {
                 cmbLookUp.Enabled = true;
                 bindLookup();
-                cmbLookUp.SelectedItem = dtLookup.AsEnumerable().Where(x => x["FieldInstanceID"].ToString() == att.LookupInstanceID.ToString()).FirstOrDefault();
+                DataRowView selecRow = dtLookup.DefaultView.Cast<DataRowView>().Where(a => a.Row["FieldInstanceID"].ToString() == att.LookupInstanceID.ToString()).FirstOrDefault();
+                //       var sel = dtLookup.AsEnumerable().Where(x => x["FieldInstanceID"].ToString() == att.LookupInstanceID.ToString()).FirstOrDefault();
+                cmbLookUp.SelectedItem = selecRow;
             }
             else
             {
@@ -255,8 +277,12 @@ namespace TZ.ImportDesk
             }
             if (att.Type == CompExtention.AttributeType._componentlookup)
             {
+
                 bindComponentCombo();
-                bindComponentLookupDisplayName(att.ComponentLookup);
+                if (att.ComponentLookup != null) {
+                    bindComponentLookupDisplayName(att.ComponentLookup);
+                }
+          
                 cmbCompLookup.Enabled = true;
                 cmbCompDisplayName.Enabled = true;
                 cmbCompLookup.SelectedItem = CompList.Where(x => x.ID == att.ComponentLookup).FirstOrDefault();
@@ -416,15 +442,13 @@ namespace TZ.ImportDesk
             {
                 txtExtension.Enabled = false;
             }
-
-
         }
 
-        private void cmbClients_SelectedIndexChanged(object sender, EventArgs e)
-        {
-            DataRowView dr = (DataRowView)cmbClients.SelectedItem;
-            ClientID = Convert.ToInt32(dr.Row["ClientID"]);
-        }
+        //private void cmbClients_SelectedIndexChanged(object sender, EventArgs e)
+        //{
+        //    DataRowView dr = (DataRowView)cmbClients.SelectedItem;
+        //    ClientID = Convert.ToInt32(dr.Row["ClientID"]);
+        //}
 
         private void cmbCompLookup_SelectedIndexChanged_1(object sender, EventArgs e)
         {
@@ -470,8 +494,7 @@ namespace TZ.ImportDesk
                 if (att.IsKey == true)
                 {
                     component.Keys.Add(att);
-                }
-                
+                }                
             }
             //TZ.CompExtention.ComponentManager cm = new CompExtention.ComponentManager(SelectedTable, new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
             if (cm.Save(component)) {
@@ -653,6 +676,9 @@ namespace TZ.ImportDesk
 
         }
 
-    
+        private void ComponentBuilder_FormClosed(object sender, FormClosedEventArgs e)
+        {
+            ((Master)this.MdiParent).CloseForm(this.AccessibleName);          
+        }
     }
 }

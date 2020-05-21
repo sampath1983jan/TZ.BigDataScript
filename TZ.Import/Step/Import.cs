@@ -108,6 +108,31 @@ namespace TZ.Import.Step
                 LinkComponentData.Logs.Clear();
                 CacheData(logPath + "/" + "cd" + "_" + LinkComponentData.Component.ID + "_" + this.Context.ID + ".json", Newtonsoft.Json.JsonConvert.SerializeObject(LinkComponentData));
             }
+
+            var pseudocore = this.Context.ComponentData.Where(x => x.Component.Type == ComponentType.pseudocore ).FirstOrDefault();
+            if (pseudocore != null) {
+                pseudocore.LoadLog(logPath, this.Context.ID);
+ 
+                var ca = cAction.Where(x => x.ComponentName == pseudocore.Component.TableName).FirstOrDefault();
+                if (ca != null)
+                {
+                    pseudocore.Validation = ca.CustomAction;
+                }
+                pseudocore.PushPseudo(this.Context.Connection, logPath, this.Context.ID);
+                pseudocore.Validation = null;
+                pseudocore.Errors = pseudocore.Errors.Where(x => x.Type == ErrorType.ERROR).ToList();
+
+                if (pseudocore.Logs.Where(x => x.Type == ErrorType.ERROR).ToList().Count > 0 || pseudocore.Errors.Count > 0)
+                {
+
+                    isError = true;
+                }
+                pseudocore.IsCompleted = true;
+                pseudocore.Logs.Clear();
+                CacheData(logPath + "/" + "cd" + "_" + pseudocore.Component.ID + "_" + this.Context.ID + ".json", Newtonsoft.Json.JsonConvert.SerializeObject(pseudocore));
+
+            }
+         
             string strjson = File.ReadAllText(logPath + "/" + this.Context.ID + "_lookup.json");
             DataTable dt = Newtonsoft.Json.JsonConvert.DeserializeObject<DataTable>(strjson);
             if (dt.Columns.Contains("New"))

@@ -27,11 +27,14 @@ namespace TZ.CompExtention
         }
 
         public static void ExecuteSetup(string conn) {
-            Builder.Data.Setup s = new Builder.Data.Setup(conn);
-            s.Clear();
+            Builder.Data.Setup s = new Builder.Data.Setup(conn);         
             s.Install();
         }
 
+        public static void ClearSchema(string conn) {
+            Builder.Data.Setup s = new Builder.Data.Setup(conn);
+            s.Clear();
+        }
         public static DataTable GetClientList (string conn)
         {
             DataBase db = new DataBase();
@@ -40,6 +43,19 @@ namespace TZ.CompExtention
             string[] a = { "ClientID", "CustomerName"};
             select = DBQuery.Select().Fields(a).From("sys_client").Distinct();
             return db.Database.GetDatatable(select);
+        }
+        public static bool IsValidConnection(string conn) {
+            try
+            {
+                DataBase db = new DataBase();
+                db.InitDbs(conn);
+             var dbqu=   DBQuery.SelectAll().From("sys_client").TopN(1) ;
+                db.Database.GetDatatable(dbqu);
+                return true;
+            }
+            catch (Exception ex) {
+                return false;
+            }
         }
 
         public static DataTable GetComponentList(int clientid,string conn) {

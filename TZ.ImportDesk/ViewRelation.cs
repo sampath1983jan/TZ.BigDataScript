@@ -17,10 +17,12 @@ namespace TZ.ImportDesk
             InitializeComponent();
         }
 
-        public ViewRelation(CompExtention.ComponentRelation vc)
+        public ViewRelation(CompExtention.ComponentRelation vc,string connection)
         {
-            Component = vc;
             InitializeComponent();
+            Connection = connection;
+            Component = vc;
+        
         }
         public CompExtention.ComponentRelation Component { get; set; }
                 
@@ -32,23 +34,27 @@ namespace TZ.ImportDesk
 
         public delegate void RelationItemRemove(int index);
         public event RelationItemRemove OnRelationItemRemove;
-        string Connection = "Server=183.82.34.174;Initial Catalog=talentozdev;Uid=admin;Pwd=admin312";
+        string Connection = "";
         int itemIndex = 0;
         int defaultHeight = 25;
 
         private void ViewRelation_Load(object sender, EventArgs e)
         {
-            if (Component.Relationship.Count == 0)
-            {
-                var vr = new CompExtention.ViewRelation();
-                AddViewRelation(itemIndex, vr);
-                Component.Relationship.Add(vr);
-            }
-            else {
-                foreach (CompExtention.ViewRelation vr in Component.Relationship) {
+            if (Connection != "") {
+                if (Component.Relationship.Count == 0)
+                {
+                    var vr = new CompExtention.ViewRelation();
                     AddViewRelation(itemIndex, vr);
-                    itemIndex = itemIndex + 1;
-                }               
+                    Component.Relationship.Add(vr);
+                }
+                else
+                {
+                    foreach (CompExtention.ViewRelation vr in Component.Relationship)
+                    {
+                        AddViewRelation(itemIndex, vr);
+                        itemIndex = itemIndex + 1;
+                    }
+                }
             }              
         }
         private void AddViewRelation(int index, CompExtention.ViewRelation vr)
@@ -208,10 +214,7 @@ namespace TZ.ImportDesk
 
         
     
-        private void gbRelation_Enter(object sender, EventArgs e)
-        {
-
-        }
+       
         
     }
 }

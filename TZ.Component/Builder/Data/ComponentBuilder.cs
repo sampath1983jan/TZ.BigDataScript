@@ -153,7 +153,7 @@ namespace TZ.CompExtention.Builder.Data
             bool isPrimary,
             bool isAuto,
             string lookupComponent,
-            string componentDisplayField, int clientid)
+            string componentDisplayField)
         {
             string attID = Shared.generateID();
             Tech.Data.Query.DBQuery dBQuery = DBQuery.InsertInto(TalentozSchemaInfo.Table)
@@ -167,8 +167,7 @@ namespace TZ.CompExtention.Builder.Data
                       .Field(TalentozSchemaInfo.IsAuto.Name)                        
                             .Field(TalentozSchemaInfo.LookupComponent.Name)
                                .Field(TalentozSchemaInfo.ComponentLookupDisplayName.Name)
-                                .Field(TalentozSchemaInfo.LastUPD.Name)
-                                   .Field(TalentozSchemaInfo.ClientID.Name)
+                                .Field(TalentozSchemaInfo.LastUPD.Name)                                  
                       .Values(DBConst.String(componentID),
                 DBConst.String(attID),
                 DBConst.String(name),
@@ -188,6 +187,67 @@ namespace TZ.CompExtention.Builder.Data
             DBConst.Const(System.Data.DbType.Boolean, isAuto)    ,
                DBConst.Const(System.Data.DbType.String, lookupComponent),
                   DBConst.Const(System.Data.DbType.String, componentDisplayField),
+                   DBConst.Const(System.Data.DbType.DateTime, DateTime.Today)                      
+                  );
+            if (db.ExecuteNonQuery(dBQuery) > 0)
+            {
+                return attID;
+
+            }
+            else
+            {
+                return "";
+            }
+        }
+
+        protected internal string SaveClientAttribute(string id,string name, string displayName, string componentID,
+            bool isRequired, bool isUnique, bool isCore,
+            bool isReadonly,
+            bool isSecured,
+            int lookupId,
+            int type,
+            int length,
+            string defaultValue,
+            string fileExtension,
+            bool isNull,
+            bool isPrimary,
+            bool isAuto,
+            string lookupComponent,
+            string componentDisplayField, int clientid)
+        {
+            string attID = id;
+            Tech.Data.Query.DBQuery dBQuery = DBQuery.InsertInto(TalentozSchemaClientInfo.Table)
+                .Field(TalentozSchemaClientInfo.ComponentID.Name).Field(TalentozSchemaClientInfo.FieldID.Name).Field(TalentozSchemaClientInfo.AttributeName.Name)
+                  .Field(TalentozSchemaClientInfo.DisplayName.Name).Field(TalentozSchemaClientInfo.IsRequired.Name).Field(TalentozSchemaClientInfo.IsUnique.Name)
+                      .Field(TalentozSchemaClientInfo.IsCore.Name).Field(TalentozSchemaClientInfo.IsReadOnly.Name).Field(TalentozSchemaClientInfo.IsSecured.Name)
+                       .Field(TalentozSchemaClientInfo.LookUpID.Name).Field(TalentozSchemaClientInfo.AttributeType.Name).Field(TalentozSchemaClientInfo.Length.Name)
+                       .Field(TalentozSchemaClientInfo.DefaultValue.Name).Field(TalentozSchemaClientInfo.FileExtension.Name)//  .Field(TalentozSchemaClientInfo.RegExp.Name)
+                       .Field(TalentozSchemaClientInfo.IsNullable.Name)
+                       .Field(TalentozSchemaClientInfo.ISPrimaryKey.Name)
+                      .Field(TalentozSchemaClientInfo.IsAuto.Name)
+                            .Field(TalentozSchemaClientInfo.LookupComponent.Name)
+                               .Field(TalentozSchemaClientInfo.ComponentLookupDisplayName.Name)
+                                .Field(TalentozSchemaClientInfo.LastUPD.Name)
+                                   .Field(TalentozSchemaClientInfo.ClientID.Name)
+                      .Values(DBConst.String(componentID),
+                DBConst.String(attID),
+                DBConst.String(name),
+                DBConst.String(displayName),
+                DBConst.Const(System.Data.DbType.Boolean, isRequired),
+                DBConst.Const(System.Data.DbType.Boolean, isUnique),
+                DBConst.Const(System.Data.DbType.Boolean, isCore),
+                DBConst.Const(System.Data.DbType.Boolean, isReadonly),
+                 DBConst.Const(System.Data.DbType.Boolean, isSecured),
+                      DBConst.Const(System.Data.DbType.Int32, lookupId),
+            DBConst.Const(System.Data.DbType.Int32, type),
+            DBConst.Const(System.Data.DbType.Int32, length),
+            DBConst.Const(System.Data.DbType.String, defaultValue),
+            DBConst.Const(System.Data.DbType.String, fileExtension),
+            DBConst.Const(System.Data.DbType.Boolean, isNull),
+            DBConst.Const(System.Data.DbType.Boolean, isPrimary),
+            DBConst.Const(System.Data.DbType.Boolean, isAuto),
+               DBConst.Const(System.Data.DbType.String, lookupComponent),
+                  DBConst.Const(System.Data.DbType.String, componentDisplayField),
                    DBConst.Const(System.Data.DbType.DateTime, DateTime.Today),
                      DBConst.Const(System.Data.DbType.Int32, clientid)
                   );
@@ -201,6 +261,7 @@ namespace TZ.CompExtention.Builder.Data
                 return "";
             }
         }
+
 
         protected internal bool UpdateComponent( string componentID, string name, int type,string title,string category,string primarykey,string entityKEy)
         {
@@ -223,7 +284,7 @@ namespace TZ.CompExtention.Builder.Data
                 return false;
             }
         }
-        protected internal bool UpdateComponentAttribute(int clientID,string componentID,string attributeID,
+        protected internal bool UpdateComponentAttribute(string componentID,string attributeID,
            string displayName,
             bool isRequired, bool isUnique, bool isCore,
             bool isReadonly,
@@ -236,7 +297,7 @@ namespace TZ.CompExtention.Builder.Data
             string lookupComponent,
             string componentDisplayField) {
 
-            DBComparison client = DBComparison.Equal(DBField.Field(TalentozSchemaInfo.ClientID.Name), DBConst.Int32(clientID));
+
              DBComparison comp = DBComparison.Equal(DBField.Field(TalentozSchemaInfo.ComponentID.Name), DBConst.String(componentID));
             DBComparison att = DBComparison.Equal(DBField.Field(TalentozSchemaInfo.FieldID.Name), DBConst.String(attributeID));
 
@@ -253,6 +314,46 @@ namespace TZ.CompExtention.Builder.Data
                 .AndSet(DBField.Field(TalentozSchemaInfo.ComponentLookupDisplayName.Name), DBConst.String(componentDisplayField))
                        .AndSet(DBField.Field(TalentozSchemaInfo.FileExtension.Name), DBConst.String(fileExtension))
                             .AndSet(DBField.Field(TalentozSchemaInfo.Length.Name), DBConst.Int32(length))
+                .WhereAll( comp, att);
+            if (db.ExecuteNonQuery(update) > 0)
+            {
+                return true;
+            }
+            else
+                return false;
+        }
+
+        protected internal bool UpdateComponentClientAttribute(int clientID, string componentID, string attributeID,
+           string displayName,
+            bool isRequired, bool isUnique, bool isCore,
+            bool isReadonly,
+            bool isSecured,
+            int lookupId,
+            int type,
+            int length,
+            string defaultValue,
+            string fileExtension,
+            string lookupComponent,
+            string componentDisplayField)
+        {
+
+            DBComparison client = DBComparison.Equal(DBField.Field(TalentozSchemaClientInfo.ClientID.Name), DBConst.Int32(clientID));
+            DBComparison comp = DBComparison.Equal(DBField.Field(TalentozSchemaClientInfo.ComponentID.Name), DBConst.String(componentID));
+            DBComparison att = DBComparison.Equal(DBField.Field(TalentozSchemaClientInfo.FieldID.Name), DBConst.String(attributeID));
+
+            DBQuery update = DBQuery.Update(TalentozSchemaClientInfo.Table).Set(DBField.Field(TalentozSchemaClientInfo.DisplayName.Name), DBConst.String(displayName))
+                .AndSet(DBField.Field(TalentozSchemaClientInfo.IsRequired.Name), DBConst.Const(DbType.Boolean, isRequired))
+                .AndSet(DBField.Field(TalentozSchemaClientInfo.IsUnique.Name), DBConst.Const(DbType.Boolean, isUnique))
+                .AndSet(DBField.Field(TalentozSchemaClientInfo.IsCore.Name), DBConst.Const(DbType.Boolean, isCore))
+                .AndSet(DBField.Field(TalentozSchemaClientInfo.IsReadOnly.Name), DBConst.Const(DbType.Boolean, isReadonly))
+                .AndSet(DBField.Field(TalentozSchemaClientInfo.IsSecured.Name), DBConst.Const(DbType.Boolean, isSecured))
+                .AndSet(DBField.Field(TalentozSchemaClientInfo.AttributeType.Name), DBConst.Int32(type))
+                .AndSet(DBField.Field(TalentozSchemaClientInfo.LookUpID.Name), DBConst.Int32(lookupId))
+                .AndSet(DBField.Field(TalentozSchemaClientInfo.DefaultValue.Name), DBConst.String(defaultValue))
+                .AndSet(DBField.Field(TalentozSchemaClientInfo.LookupComponent.Name), DBConst.String(lookupComponent))
+                .AndSet(DBField.Field(TalentozSchemaClientInfo.ComponentLookupDisplayName.Name), DBConst.String(componentDisplayField))
+                       .AndSet(DBField.Field(TalentozSchemaClientInfo.FileExtension.Name), DBConst.String(fileExtension))
+                            .AndSet(DBField.Field(TalentozSchemaClientInfo.Length.Name), DBConst.Int32(length))
                 .WhereAll(client, comp, att);
             if (db.ExecuteNonQuery(update) > 0)
             {
@@ -261,14 +362,14 @@ namespace TZ.CompExtention.Builder.Data
             else
                 return false;
         }
-        protected internal bool UpdateComponentLookUp(int clientID,string componentID, string attributeID, string componentLookup, string displayName) {
-            DBComparison client = DBComparison.Equal(DBField.Field(TalentozSchemaInfo.ClientID.Name), DBConst.Int32(clientID));
+
+        protected internal bool UpdateComponentLookUp(string componentID, string attributeID, string componentLookup, string displayName) {
+       //     DBComparison client = DBComparison.Equal(DBField.Field(TalentozSchemaInfo.ClientID.Name), DBConst.Int32(clientID));
             //DBComparison comp = DBComparison.Equal(DBField.Field(TalentozSchemaInfo.ComponentID.Name), DBConst.String(componentID));
             DBComparison att = DBComparison.Equal(DBField.Field(TalentozSchemaInfo.FieldID.Name), DBConst.String(attributeID));
-
             DBQuery update = DBQuery.Update(TalentozSchemaInfo.Table)
                 .Set(TalentozSchemaInfo.LookupComponent.Name , DBConst.String(componentLookup))
-                .AndSet(TalentozSchemaInfo.ComponentLookupDisplayName.Name, DBConst.String(displayName)).WhereAll(client,  att);
+                .AndSet(TalentozSchemaInfo.ComponentLookupDisplayName.Name, DBConst.String(displayName)).WhereAll( att);
             if (db.ExecuteNonQuery(update) > 0)
             {
                 return true;
@@ -307,16 +408,29 @@ namespace TZ.CompExtention.Builder.Data
             DBQuery select = DBQuery.SelectAll().From(TalentozSchema.Table).WhereAny(comp, tb, cname).OrderBy(TalentozSchema.ComponentName.Name, Order.Ascending);
             return db.GetDatatable(select);
         }
-        protected internal DataTable GetAttribute(int clientId, string componentID) {
+        protected internal DataTable GetAttribute( string componentID) {
             string[] cid = componentID.Split(',');
             List<DBClause> cids = new List<DBClause>();
             for (int i = 0; i < cid.Length; i++) {
                 cids.Add(DBConst.String(cid[i]));
             }
-
-            DBComparison client = DBComparison.Equal(DBField.Field(TalentozSchemaInfo.ClientID.Name), DBConst.Int32(clientId));
+          //  DBComparison client = DBComparison.Equal(DBField.Field(TalentozSchemaInfo.ClientID.Name), DBConst.Int32(clientId));
             DBComparison comp = DBComparison.In(DBField.Field(TalentozSchemaInfo.ComponentID.Name), cids.ToArray());
-            DBQuery select = DBQuery.SelectAll().From(TalentozSchemaInfo.Table).WhereAll(client,comp);
+            DBQuery select = DBQuery.SelectAll().From(TalentozSchemaInfo.Table).WhereAll(comp);
+            return db.GetDatatable(select);
+        }
+
+        protected internal DataTable GetClientAttribute(int clientID,string componentID)
+        {
+            string[] cid = componentID.Split(',');
+            List<DBClause> cids = new List<DBClause>();
+            for (int i = 0; i < cid.Length; i++)
+            {
+                cids.Add(DBConst.String(cid[i]));
+            }
+             DBComparison client = DBComparison.Equal(DBField.Field(TalentozSchemaClientInfo.ClientID.Name), DBConst.Int32(clientID));
+            DBComparison comp = DBComparison.In(DBField.Field(TalentozSchemaClientInfo.ComponentID.Name), cids.ToArray());
+            DBQuery select = DBQuery.SelectAll().From(TalentozSchemaClientInfo.Table).WhereAll(client, comp);
             return db.GetDatatable(select);
         }
     }

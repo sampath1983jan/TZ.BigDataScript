@@ -49,6 +49,8 @@ namespace TZ.CompExtention
         public string ComponentLookupDisplayField { get; set; }
         public string ComponentLookup { get; set; }
         protected internal int ClientID { get; set; }
+        public bool IsCustomField { get; set ; }
+
         public Attribute() {
             EntityKey = "";
             ComponentID = "";

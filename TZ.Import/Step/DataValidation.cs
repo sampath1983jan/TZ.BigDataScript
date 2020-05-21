@@ -101,7 +101,7 @@ namespace TZ.Import.Step
             this.Context.LoadComponentView();
             string strjson = File.ReadAllText(logPath + "/" + this.Context.ID + ".json");
             dt = Newtonsoft.Json.JsonConvert.DeserializeObject<DataTable>(strjson);
-            var CoreComponent = Context.View.Components.Where(x => x.Type == ComponentType.core || x.Type == ComponentType.attribute || x.Type== ComponentType.link).ToList();
+            var CoreComponent = Context.View.Components.Where(x => x.Type == ComponentType.core || x.Type == ComponentType.pseudocore  || x.Type == ComponentType.attribute || x.Type== ComponentType.link).ToList();
             foreach (IComponent comp in CoreComponent)
             {
                 if (File.Exists(logPath + "/" + "cd" + "_" + comp.ID + "_" + this.Context.ID + ".json"))
@@ -239,6 +239,58 @@ namespace TZ.Import.Step
             CacheData(logPath + "/" + "cd" + "_" + comp.ID + "_" + this.Context.ID + ".json", Newtonsoft.Json.JsonConvert.SerializeObject(cd));
             return (cd);        
         }
+        private ComponentData Validatepsedo( string logPath, List<ComponentCustomAction> caction) {
+            var pseudo = Context.View.Components.Where(x => x.Type == ComponentType.pseudocore).First();
+            if (pseudo != null)
+            {
+                ComponentData cd = new ComponentData(this.Context.ClientID, (Component)pseudo);
+                cd.ImportFields = this.Context.ImportFields.Where(x => x.ComponentID == pseudo.ID).ToList();
+                cd.lookupPath = logPath + "/" + this.Context.ID + "_lookup.json";
+              
+
+                // pseudo component base template modified template field due to privot so we cannot use template field from context template. that is why i init again to get template & field
+              var  currentTemplate = new CompExtention.ImportTemplate.Template(this.Context.Template.TemplateID, this.Context.ClientID , this.Context.Connection);
+                cd.SetLookupList(dtLk);
+                var action = caction.Where(x => x.ComponentName == pseudo.TableName).FirstOrDefault();
+                if (action != null)
+                {
+                    cd.Validation = action.CustomAction;
+                    cd.Validation.Init();
+                }
+                if (this.Context.Template.Type == CompExtention.ImportTemplate.Template.TemplateType.PIVOT)
+                {
+                    List<string> com = new List<string>();
+                    com.Add(pseudo.ID);
+                   var ViewAttributes = CompExtention.ComponentManager.GetComponentAttributes(string.Join(",", com.ToArray()), this.Context.ClientID, new CompExtention.DataAccess.ComponentDataHandler(this.Context.Connection));
+
+                    cd.ExtractDataFromSource(dt);
+                    cd.LoadTargetPivotData(this.Context.Connection,currentTemplate.TemplateFields, ViewAttributes);
+
+                    cd.ValidatePivotData(false, this.Context.Connection, logPath, this.Context.ID, currentTemplate.TemplateFields, ViewAttributes);
+                    cd.Errors = cd.Errors.Where(x => x.Type == ErrorType.ERROR).ToList();
+                    cd.Validation = null;
+                    cd.lookupPath = "";
+                    cd.GetProcessedData(logPath, this.Context.ID);
+                    CacheData(logPath + "/" + "cd" + "_" + pseudo.ID + "_" + this.Context.ID + ".json", Newtonsoft.Json.JsonConvert.SerializeObject(cd));
+                    return (cd);
+                }
+                else
+                {
+                    cd.ExtractDataFromSource(dt);
+                    cd.LoadTargetData(this.Context.Connection);
+                    cd.ValidateData(this.Context.EnableUpdateDuplicate, this.Context.Connection, logPath, this.Context.ID);
+                    cd.Errors = cd.Errors.Where(x => x.Type == ErrorType.ERROR).ToList();
+                    cd.Validation = null;
+                    cd.lookupPath = "";
+                    cd.GetProcessedData(logPath, this.Context.ID);
+                    CacheData(logPath + "/" + "cd" + "_" + pseudo.ID + "_" + this.Context.ID + ".json", Newtonsoft.Json.JsonConvert.SerializeObject(cd));
+                    return (cd);
+                }
+            }
+            else {
+                return null;
+            }
+        }
        /// <summary>
        /// validate component 
        /// </summary>
@@ -265,6 +317,11 @@ namespace TZ.Import.Step
                 var custevent = customAction.Where(x => x.ComponentName == comp.TableName).FirstOrDefault();
             
                 componentDataList.Add( ValidateCore(comp, logPath, custevent));              
+            }
+            var pseudo = Validatepsedo(logPath, customAction);
+            if (pseudo != null)
+            {
+                componentDataList.Add(pseudo);
             }
             var cdLink = ValidateLink(logPath, customAction);
             if (cdLink != null)

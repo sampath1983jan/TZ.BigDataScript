@@ -72,8 +72,16 @@ namespace TZ.CompExtention.DataAccess
                 }
                att.ID = cb.SaveAttribute(att.Name, att.DisplayName, att.ComponentID, att.IsRequired,
                     att.IsUnique, att.IsCore, false, att.IsSecured, Convert.ToInt32(att.LookupInstanceID), Convert.ToInt32( att.Type), att.Length, att.DefaultValue, att.FileExtension, att.IsNullable,
-                    att.IsKey, att.IsAuto,att.ComponentLookup, att.ComponentLookupDisplayField,att.ClientID);
+                    att.IsKey, att.IsAuto,att.ComponentLookup, att.ComponentLookupDisplayField);
             }
+            return true;
+        }
+
+        public bool SaveAttribute(string compID,  Attribute att) {
+            Builder.Data.ComponentBuilder cb = new Builder.Data.ComponentBuilder(this.Connection);
+            att.ID = cb.SaveClientAttribute(att.ID, att.Name, att.DisplayName, att.ComponentID, att.IsRequired,
+                    att.IsUnique, att.IsCore, false, att.IsSecured, Convert.ToInt32(att.LookupInstanceID), Convert.ToInt32(att.Type), att.Length, att.DefaultValue, att.FileExtension, att.IsNullable,
+                    att.IsKey, att.IsAuto, att.ComponentLookup, att.ComponentLookupDisplayField, att.ClientID);
             return true;
         }
 
@@ -129,17 +137,30 @@ namespace TZ.CompExtention.DataAccess
         public static List<Attribute> GetAttributes(string conn, string compID, int pClientID) {
             Builder.Data.ComponentBuilder cb = new Builder.Data.ComponentBuilder(conn);
             DataTable dt = new DataTable();
-            dt = cb.GetAttribute(pClientID, compID);
-            List<Attribute> atts = new List<Attribute>();
+            DataTable dtClientAtribute = new DataTable();
 
-            foreach (DataRow dr in dt.Rows) {
+            dt = cb.GetAttribute( compID);
+            dtClientAtribute = cb.GetClientAttribute(pClientID, compID);
+            List<Attribute> atts = new List<Attribute>();
+            for(int i = 0; i < dt.Rows.Count; i++) {
+                //  foreach (DataRow dr in dt.Rows) {
+                DataRow dr = dt.Rows[i];
                 Attribute a = new Attribute();
-                a.ClientID = pClientID;
-                a.ComponentID = dr[Builder.Schema.TalentozSchemaInfo.ComponentID.Name] != null ? dr[Builder.Schema.TalentozSchemaInfo.ComponentID.Name].ToString() : ""; ;
+                a.ClientID = 0;
+                a.ComponentID = dr[Builder.Schema.TalentozSchemaInfo.ComponentID.Name] != null ? dr[Builder.Schema.TalentozSchemaInfo.ComponentID.Name].ToString() : "";
+                a.ID = dr[Builder.Schema.TalentozSchemaInfo.FieldID.Name] != null ? dr[Builder.Schema.TalentozSchemaInfo.FieldID.Name].ToString() : "";
+                if (dtClientAtribute.Rows.Count > 0) {
+                    var clientRows = dtClientAtribute.Select("ComponentID='" + a.ComponentID + "' AND FieldID = '" + a.ID +"'");
+                    if (clientRows.Count() > 0)
+                    {
+                        dr = clientRows[0];
+                        a.ClientID = pClientID;
+                    }
+                }                      
                // a.ID = dr[Builder.Schema.TalentozSchemaInfo.ID.Name] != null ? dr[Builder.Schema.TalentozSchemaInfo.ID.Name].ToString() : "";
                 a.Name = dr[Builder.Schema.TalentozSchemaInfo.AttributeName.Name] != null ? dr[Builder.Schema.TalentozSchemaInfo.AttributeName.Name].ToString() : "";
                 a.DisplayName = dr[Builder.Schema.TalentozSchemaInfo.DisplayName.Name] != null ? dr[Builder.Schema.TalentozSchemaInfo.DisplayName.Name].ToString() : "";
-                a.ID = dr[Builder.Schema.TalentozSchemaInfo.FieldID.Name] != null ? dr[Builder.Schema.TalentozSchemaInfo.FieldID.Name].ToString() : "";
+            
                 a.IsRequired = dr[Builder.Schema.TalentozSchemaInfo.IsRequired.Name] != null ? Convert.ToBoolean(dr[Builder.Schema.TalentozSchemaInfo.IsRequired.Name]) : false;
                 a.IsUnique = dr[Builder.Schema.TalentozSchemaInfo.IsUnique.Name] != null ?  Convert.ToBoolean( dr[Builder.Schema.TalentozSchemaInfo.IsUnique.Name] ): false;
                 a.IsCore = dr[Builder.Schema.TalentozSchemaInfo.IsCore.Name] != null ? Convert.ToBoolean(dr[Builder.Schema.TalentozSchemaInfo.IsCore.Name]) :false;
@@ -170,13 +191,16 @@ namespace TZ.CompExtention.DataAccess
                 {
                     if (att.ID != "")
                     {
-                        cb.UpdateComponentAttribute(att.ClientID, component.ID, att.ID, att.DisplayName, att.IsRequired, att.IsUnique, att.IsCore, false, att.IsSecured,
-                     Convert.ToInt32(att.LookupInstanceID), (int)att.Type, att.Length, att.DefaultValue, att.FileExtension, att.ComponentLookup, att.ComponentLookupDisplayField
+                        cb.UpdateComponentAttribute( component.ID, att.ID, att.DisplayName, att.IsRequired, att.IsUnique, att.IsCore, 
+                            false, att.IsSecured,
+                     Convert.ToInt32(att.LookupInstanceID), (int)att.Type, att.Length, att.DefaultValue, att.FileExtension, att.ComponentLookup,
+                     att.ComponentLookupDisplayField
                         );
                     }
                     else {
-                        cb.SaveAttribute(att.Name, att.DisplayName, att.ComponentID, att.IsRequired, att.IsUnique, att.IsCore, false, att.IsSecured,Convert.ToInt32( att.LookupInstanceID),(int) att.Type, att.Length, att.DefaultValue, att.FileExtension, att.IsNullable, att.IsKey, att.IsAuto, att.ComponentLookup, att.ComponentLookupDisplayField, att.ClientID);
-                         
+                        cb.SaveAttribute(att.Name, att.DisplayName, att.ComponentID, att.IsRequired, att.IsUnique, att.IsCore, false, 
+                            att.IsSecured,Convert.ToInt32( att.LookupInstanceID),(int) att.Type, att.Length, att.DefaultValue, 
+                            att.FileExtension, att.IsNullable, att.IsKey, att.IsAuto, att.ComponentLookup, att.ComponentLookupDisplayField);                         
                     }              
 
                 }
@@ -184,14 +208,22 @@ namespace TZ.CompExtention.DataAccess
             }
             else {
                 return false;
-            }         
+            }       
              
+        }
+        public bool UpdateAttribute(string compID,Attribute att) {
+            Builder.Data.ComponentBuilder cb = new Builder.Data.ComponentBuilder(this.Connection);
+           return cb.UpdateComponentClientAttribute(att.ClientID,compID, att.ID, att.DisplayName, att.IsRequired, att.IsUnique, att.IsCore,
+                         false, att.IsSecured,
+                  Convert.ToInt32(att.LookupInstanceID), (int)att.Type, att.Length, att.DefaultValue, att.FileExtension, att.ComponentLookup,
+                  att.ComponentLookupDisplayField
+                     );
         }
 
         public bool UpdateComponentLookup(int clientID,string componentID, string attributeID, string componentLookUp, string displayName)
         {
             Builder.Data.ComponentBuilder cb = new Builder.Data.ComponentBuilder(this.Connection);
-            return cb.UpdateComponentLookUp(clientID, componentID, attributeID, componentLookUp, displayName);
+            return cb.UpdateComponentLookUp(componentID, attributeID, componentLookUp, displayName);
         }
     }
 }

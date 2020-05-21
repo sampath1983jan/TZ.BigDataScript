@@ -102,8 +102,7 @@ namespace TZ.Import
             return  this.Context.GetComponentStatus(this.LogPath );           
         }
         public static List<ImportLog> GetImportList( int clientID,int actionby,string connection)
-        {
-            
+        {            
             List<ImportLog> logs = new List<ImportLog>();
             System.Data.DataTable dt = Global.GetImportContext(clientID, actionby, connection);
             if (dt.Rows.Count > 0)
@@ -136,8 +135,7 @@ namespace TZ.Import
                 {
                     Cols.Add(dc.ColumnName);
                 }
-            }
-       
+            }       
             return Cols;
         }
         public System.Data.DataTable GetComponentDataSource(string cID) {

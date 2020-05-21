@@ -175,5 +175,15 @@ namespace TZ.CompExtention
         {
             throw new NotImplementedException();
         }
+
+        public bool SaveAttribute(string compID, Attribute att)
+        {
+            throw new NotImplementedException();
+        }
+
+        public bool UpdateAttribute(string compID, Attribute att)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

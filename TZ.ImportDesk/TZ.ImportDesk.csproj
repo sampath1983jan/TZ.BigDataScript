@@ -65,6 +65,18 @@
     <Reference Include="System.Xml" />
   </ItemGroup>
   <ItemGroup>
+    <Compile Include="AttributeList.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="AttributeList.Designer.cs">
+      <DependentUpon>AttributeList.cs</DependentUpon>
+    </Compile>
+    <Compile Include="ClientComponentBuilder.cs">
+      <SubType>Form</SubType>
+    </Compile>
+    <Compile Include="ClientComponentBuilder.Designer.cs">
+      <DependentUpon>ClientComponentBuilder.cs</DependentUpon>
+    </Compile>
     <Compile Include="ComponentBuilder.cs">
       <SubType>Form</SubType>
     </Compile>
@@ -89,6 +101,13 @@
     </Compile>
     <Compile Include="Master.Designer.cs">
       <DependentUpon>Master.cs</DependentUpon>
+    </Compile>
+    <Compile Include="Modal\Client.cs" />
+    <Compile Include="PivotTemplate.cs">
+      <SubType>UserControl</SubType>
+    </Compile>
+    <Compile Include="PivotTemplate.Designer.cs">
+      <DependentUpon>PivotTemplate.cs</DependentUpon>
     </Compile>
     <Compile Include="Program.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
@@ -134,6 +153,12 @@
     <Compile Include="ViewRelationItem.Designer.cs">
       <DependentUpon>ViewRelationItem.cs</DependentUpon>
     </Compile>
+    <EmbeddedResource Include="AttributeList.resx">
+      <DependentUpon>AttributeList.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="ClientComponentBuilder.resx">
+      <DependentUpon>ClientComponentBuilder.cs</DependentUpon>
+    </EmbeddedResource>
     <EmbeddedResource Include="ComponentBuilder.resx">
       <DependentUpon>ComponentBuilder.cs</DependentUpon>
     </EmbeddedResource>
@@ -145,6 +170,9 @@
     </EmbeddedResource>
     <EmbeddedResource Include="Master.resx">
       <DependentUpon>Master.cs</DependentUpon>
+    </EmbeddedResource>
+    <EmbeddedResource Include="PivotTemplate.resx">
+      <DependentUpon>PivotTemplate.cs</DependentUpon>
     </EmbeddedResource>
     <EmbeddedResource Include="Properties\Resources.resx">
       <Generator>ResXFileCodeGenerator</Generator>
