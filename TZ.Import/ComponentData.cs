@@ -510,176 +510,178 @@ namespace TZ.Import
             }
             else
             {
-
                 var updatelog = this.Logs.Where(x => x.Type == ErrorType.NOERROR && x.ImportingType == ComponentDataLog.ImportType.UPDATE && x.IsExist == true).ToList();
                 List<int> updateindex = updatelog.Select(log => log.Index).ToList();
                 // update behavior
-                DataTable updateData = new DataTable();
-                updateData = ValidDataSource.Select("Index In (" + string.Join(",", updateindex.ToArray()) + ")").CopyToDataTable();
-                if (updateData.Rows.Count > 0)
-                {
-                    if (Validation != null)
-                    {
-                        foreach (DataRow row in updateData.Rows)
-                        {
-                            int idx = Convert.ToInt32(row["index"]);
-                            var lg = this.Logs.Where(x => x.Index == idx).FirstOrDefault();
-                            if (lg.Type != ErrorType.ERROR)
-                            {
-                                if (Validation != null)
-                                {
-                                    var err = Validation.ValidateLink(this, row);
-                                    if (err.Type == ErrorType.ERROR)
-                                    {
-                                        lg.Message = err.Message;
-                                        lg.Type = ErrorType.ERROR;
-                                        lg.ImportingType = ComponentDataLog.ImportType.UPDATE;
-                                        continue;
-                                    }
-                                }
-                            }
-                        }
-                    }
-
-                    this.Logs.Where(x => x.Type == ErrorType.NOERROR && x.ImportingType == ComponentDataLog.ImportType.UPDATE && x.IsExist == true).ToList();
-                    updateindex = updatelog.Select(log => log.Index).ToList();
-                    // update behavior
-
+                if (updateindex.Count() > 0) {
+                    DataTable updateData = new DataTable();
                     updateData = ValidDataSource.Select("Index In (" + string.Join(",", updateindex.ToArray()) + ")").CopyToDataTable();
-
                     if (updateData.Rows.Count > 0)
                     {
-                        var dm = new DataManager();
-                        List<string> cols = new List<string>();
-                        // replace filefield name to component attribute name
-                        foreach (ImportFieldMap ifm in ImportFields)
+                        if (Validation != null)
                         {
-                            var att = this.Component.Attributes.Where(x => x.ID == ifm.DataField).FirstOrDefault();
-                            if (att != null)
+                            foreach (DataRow row in updateData.Rows)
                             {
-                                if (ifm.FileFields != null)
+                                int idx = Convert.ToInt32(row["index"]);
+                                var lg = this.Logs.Where(x => x.Index == idx).FirstOrDefault();
+                                if (lg.Type != ErrorType.ERROR)
                                 {
-                                    if (updateData.Columns.Contains(ifm.FileFields))
+                                    if (Validation != null)
                                     {
-
-                                        updateData.Columns[ifm.FileFields].ColumnName = att.Name;
+                                        var err = Validation.ValidateLink(this, row);
+                                        if (err.Type == ErrorType.ERROR)
+                                        {
+                                            lg.Message = err.Message;
+                                            lg.Type = ErrorType.ERROR;
+                                            lg.ImportingType = ComponentDataLog.ImportType.UPDATE;
+                                            continue;
+                                        }
                                     }
                                 }
                             }
                         }
 
-                        foreach (CompExtention.Attribute key in this.Component.Keys)
-                        {
-                            if (key.Name.ToLower() != "clientid" && key.ComponentLookup == "")
-                            {
-                                if (!updateData.Columns.Contains(key.Name))
-                                {
-                                    updateData.Columns["ExistKey"].ColumnName = key.Name;
-                                }
-                            }
-                        }
-                        DataTable dt = updateData.Copy();
-                        // find key fields and component fields other than any field exist need to remove it
-                        cols = new List<string>();
-                        foreach (DataColumn dc in dt.Columns)
-                        {
-                            bool isKeyCol = false;
-                            foreach (ComponentData c in this.ParentComponentData)
-                            {
-                                var a = c.Component.Keys.Where(x => x.Name == dc.ColumnName).FirstOrDefault();
-                                if (a != null)
-                                {
-                                    isKeyCol = true;
-                                }
-                            }
-                            foreach (CompExtention.Attribute att in this.Component.Attributes)
-                            {
-                                if (att.Name == dc.ColumnName)
-                                {
-                                    isKeyCol = true;
-                                }
-                            }
-                            if (isKeyCol == false)
-                            {
-                                cols.Add(dc.ColumnName);
-                            }
-                        }
-                        foreach (string s in cols)
-                        {
-                            dt.Columns.Remove(s);
-                        }/////
+                        this.Logs.Where(x => x.Type == ErrorType.NOERROR && x.ImportingType == ComponentDataLog.ImportType.UPDATE && x.IsExist == true).ToList();
+                        updateindex = updatelog.Select(log => log.Index).ToList();
+                        // update behavior
 
-                        dm = new DataManager();
-                        dm.tableName(this.Component.TableName);
-                        foreach (DataColumn dc in dt.Columns)
+                        updateData = ValidDataSource.Select("Index In (" + string.Join(",", updateindex.ToArray()) + ")").CopyToDataTable();
+
+                        if (updateData.Rows.Count > 0)
                         {
-                            if (dc.DataType == typeof(DateTime))
+                            var dm = new DataManager();
+                            List<string> cols = new List<string>();
+                            // replace filefield name to component attribute name
+                            foreach (ImportFieldMap ifm in ImportFields)
                             {
-                                dm.UpdateInto(dc.ColumnName, FieldType._datetime, "");
+                                var att = this.Component.Attributes.Where(x => x.ID == ifm.DataField).FirstOrDefault();
+                                if (att != null)
+                                {
+                                    if (ifm.FileFields != null)
+                                    {
+                                        if (updateData.Columns.Contains(ifm.FileFields))
+                                        {
+
+                                            updateData.Columns[ifm.FileFields].ColumnName = att.Name;
+                                        }
+                                    }
+                                }
                             }
-                            else if (dc.DataType == typeof(Boolean))
+
+                            foreach (CompExtention.Attribute key in this.Component.Keys)
                             {
-                                dm.UpdateInto(dc.ColumnName, FieldType._bool, "");
+                                if (key.Name.ToLower() != "clientid" && key.ComponentLookup == "")
+                                {
+                                    if (!updateData.Columns.Contains(key.Name))
+                                    {
+                                        updateData.Columns["ExistKey"].ColumnName = key.Name;
+                                    }
+                                }
+                            }
+                            DataTable dt = updateData.Copy();
+                            // find key fields and component fields other than any field exist need to remove it
+                            cols = new List<string>();
+                            foreach (DataColumn dc in dt.Columns)
+                            {
+                                bool isKeyCol = false;
+                                foreach (ComponentData c in this.ParentComponentData)
+                                {
+                                    var a = c.Component.Keys.Where(x => x.Name == dc.ColumnName).FirstOrDefault();
+                                    if (a != null)
+                                    {
+                                        isKeyCol = true;
+                                    }
+                                }
+                                foreach (CompExtention.Attribute att in this.Component.Attributes)
+                                {
+                                    if (att.Name == dc.ColumnName)
+                                    {
+                                        isKeyCol = true;
+                                    }
+                                }
+                                if (isKeyCol == false)
+                                {
+                                    cols.Add(dc.ColumnName);
+                                }
+                            }
+                            foreach (string s in cols)
+                            {
+                                dt.Columns.Remove(s);
+                            }/////
+
+                            dm = new DataManager();
+                            dm.tableName(this.Component.TableName);
+                            foreach (DataColumn dc in dt.Columns)
+                            {
+                                if (dc.DataType == typeof(DateTime))
+                                {
+                                    dm.UpdateInto(dc.ColumnName, FieldType._datetime, "");
+                                }
+                                else if (dc.DataType == typeof(Boolean))
+                                {
+                                    dm.UpdateInto(dc.ColumnName, FieldType._bool, "");
+                                }
+                                else
+                                {
+                                    dm.UpdateInto(dc.ColumnName, FieldType._string, "");
+                                }
+                            }
+                            foreach (CompExtention.Attribute key in this.Component.Keys)
+                            {
+                                dm.Where(this.Component.TableName, key.Name, "=", "");
+                            }
+                            if (dm.GetSchema().Wheres.Count == 0)
+                            {
+                                Errors.Add(new ImportError()
+                                {
+                                    Message = "No Key field set while update record",
+                                    Type = ErrorType.ERROR,
+                                });
                             }
                             else
                             {
-                                dm.UpdateInto(dc.ColumnName, FieldType._string, "");
+                                if (dm.GetSchema().Wheres.Where(x => x.FieldName.ToLower() == "clientid").FirstOrDefault() == null)
+                                {
+                                    dm.Where(this.Component.TableName, "ClientID", "=", ClientID.ToString());
+                                }
                             }
-                        }
-                        foreach (CompExtention.Attribute key in this.Component.Keys)
-                        {
-                            dm.Where(this.Component.TableName, key.Name, "=", "");
-                        }
-                        if (dm.GetSchema().Wheres.Count == 0)
-                        {
-                            Errors.Add(new ImportError()
-                            {
-                                Message = "No Key field set while update record",
-                                Type = ErrorType.ERROR,
-                            });
-                        }
-                        else
-                        {
-                            if (dm.GetSchema().Wheres.Where(x => x.FieldName.ToLower() == "clientid").FirstOrDefault() == null)
-                            {
-                                dm.Where(this.Component.TableName, "ClientID", "=", ClientID.ToString());
-                            }
-                        }
-                        TotalUpdated = 0;
-                        //}
-                        var path = logPath + "/" + Guid.NewGuid() + ".csv";
-                        File.WriteAllText(path, "");
-                        dt.ToCSV(path);
-                        var updateerr = dm.ExecuteNonQuery(path, conn);
+                            TotalUpdated = 0;
+                            //}
+                            var path = logPath + "/" + Guid.NewGuid() + ".csv";
+                            File.WriteAllText(path, "");
+                            dt.ToCSV(path);
+                            var updateerr = dm.ExecuteNonQuery(path, conn);
 
-                        int indexx = 0;
-                        foreach (DataError derr in updateerr)
-                        {
-                            var drow = updateData.Rows[indexx];
-                            var a = Convert.ToInt32(drow["Index"]);
-                            var lg = Logs.Where(x => x.Index == a).FirstOrDefault();
-                            if (lg != null)
+                            int indexx = 0;
+                            foreach (DataError derr in updateerr)
                             {
-                                lg.Message = derr.Message;
-                                lg.ImportingType = ComponentDataLog.ImportType.UPDATE;
-                                if (derr.Type == DataError.ErrorType.ERROR)
+                                var drow = updateData.Rows[indexx];
+                                var a = Convert.ToInt32(drow["Index"]);
+                                var lg = Logs.Where(x => x.Index == a).FirstOrDefault();
+                                if (lg != null)
                                 {
-                                    lg.Type = ErrorType.ERROR;
-                                }
-                                else if (derr.Type == DataError.ErrorType.NOERROR)
-                                {
-                                    lg.Type = ErrorType.NOERROR;
+                                    lg.Message = derr.Message;
+                                    lg.ImportingType = ComponentDataLog.ImportType.UPDATE;
+                                    if (derr.Type == DataError.ErrorType.ERROR)
+                                    {
+                                        lg.Type = ErrorType.ERROR;
+                                    }
+                                    else if (derr.Type == DataError.ErrorType.NOERROR)
+                                    {
+                                        lg.Type = ErrorType.NOERROR;
+                                    }
                                 }
                             }
+                            if (Validation != null)
+                            {
+                                Validation.AfterUpdate(this, dt);
+                            }
+                            dt.Dispose();
+                            TotalUpdated = Logs.Where(x => x.Type == ErrorType.NOERROR && x.ImportingType == ComponentDataLog.ImportType.UPDATE).ToList().Count;
                         }
-                        if (Validation != null)
-                        {
-                            Validation.AfterUpdate(this, dt);
-                        }
-                        dt.Dispose();
-                        TotalUpdated = Logs.Where(x => x.Type == ErrorType.NOERROR && x.ImportingType == ComponentDataLog.ImportType.UPDATE).ToList().Count;
                     }
                 }
+                
             }
             ErrorRecord = Logs.Where(x => x.Type == ErrorType.ERROR).ToList().Count;
         }
@@ -983,22 +985,21 @@ namespace TZ.Import
                     TotalInserted = Logs.Where(x => x.Type == ErrorType.NOERROR && x.ImportingType == ComponentDataLog.ImportType.INSERT).ToList().Count();
                     AddImportStatus(this.DataStatus.DataProcessedCount, 100, "Processing support information", Import.DataStatus.COMPLETED);
                     //ErrorRecord = er.Count;
-                }
-                else
-                {
-                   // AddImportStatus(0, 0, "Import Completed", Import.DataStatus.STARTED);
-                    var updatelog = this.Logs.Where(x => x.Type == ErrorType.NOERROR && x.IsExist == true).ToList();
-                    List<int> updateindex = updatelog.Select(log => log.Index).ToList();
+                }              
 
+                // AddImportStatus(0, 0, "Import Completed", Import.DataStatus.STARTED);
+                var updatelog = this.Logs.Where(x => x.Type == ErrorType.NOERROR && x.IsExist == true).ToList();
+                List<int> updateindex = updatelog.Select(log => log.Index).ToList();
+                if (updateindex.Count() > 0) {
                     DataTable updateData = new DataTable();
-                    List<string> columnNames = new List<string>();
-                    int index = 0;
+
                     updateData = ValidDataSource.Select("Index In (" + string.Join(",", updateindex.ToArray()) + ")").CopyToDataTable();
                     //  updateData = ValidDataSource.AsEnumerable().Where(x => x["Index"].ToString().Contains(string.Join(",", updateindex.ToArray()))).AsDataView().ToTable(true);
                     if (updateData.Rows.Count > 0)
                     {
+                        List<string> columnNames = new List<string>();
                         var dm = new DataManager();
-
+                        int index = 0;
                         DataTable dt = new DataTable();
                         dt = updateData.Copy();
 
@@ -1012,7 +1013,7 @@ namespace TZ.Import
                             var att = this.Component.Attributes.Where(x => x.ID == ifm.DataField).FirstOrDefault();
                             if (ifm.FileFields != null)
                             {
-                                if (dt.Columns.Contains(ifm.FileFields) && (! dt.Columns.Contains(att.Name)))
+                                if (dt.Columns.Contains(ifm.FileFields) && (!dt.Columns.Contains(att.Name)))
                                 {
                                     dt.Columns[ifm.FileFields].ColumnName = att.Name;
                                 }
@@ -1109,14 +1110,6 @@ namespace TZ.Import
                                 }
                                 index = index + 1;
                             }
-                            //if (drr.Type == DataError.ErrorType.ERROR)
-                            //{
-                            //    Errors.Add(new ImportError()
-                            //    {
-                            //        Message = drr.Message,
-                            //        Type = ErrorType.ERROR,
-                            //    });
-                            //}
                         }
                         TotalUpdated = updatelog.Where(x => x.Type == ErrorType.NOERROR).ToList().Count();
                         if (Validation != null)
@@ -1124,7 +1117,8 @@ namespace TZ.Import
                             try
                             {
                                 this.DataStatus.PercentageToComplete = this.DataStatus.PercentageToComplete + (this.DataStatus.PercentageToComplete * .12);
-                                if (this.DataStatus.PercentageToComplete > 100) {
+                                if (this.DataStatus.PercentageToComplete > 100)
+                                {
                                     this.DataStatus.PercentageToComplete = 90;
                                 }
                                 AddImportStatus(this.DataStatus.DataProcessedCount, this.DataStatus.PercentageToComplete, "Processing support information", Import.DataStatus.STARTED);
@@ -1134,13 +1128,14 @@ namespace TZ.Import
                             {
 
                             }
-                        }                     
+                        }
 
                         ValidDataSource.Rows.Clear();
                         ValidDataSource.Merge(InsertData);
                         ValidDataSource.Merge(updateData);
                     }
                 }
+              
                 AddImportStatus(this.DataStatus.DataProcessedCount, 100, "Import Completed", Import.DataStatus.COMPLETED);
                 ErrorRecord = Logs.Where(x => x.Type == ErrorType.ERROR).ToList().Count();
             }
@@ -1447,47 +1442,53 @@ namespace TZ.Import
             LoadLog(logPath, context);
             var errLog = this.Logs.Where(x => x.Type == ErrorType.ERROR).ToList();
             List<int> indexList = errLog.Select(log => log.Index).ToList();
-
-            clonedDT = clonedDT.Select("Index In (" + string.Join(",", indexList.ToArray()) + ")").CopyToDataTable();
-
-            foreach (DataRow dr in clonedDT.Rows)
+            if (indexList.Count > 0)
             {
-                int indx = Convert.ToInt32(dr["index"]);
-                var lg = this.Logs.Where(x => x.Index == indx).FirstOrDefault();
-                var status = lg.Type;
-                var itype = lg.ImportingType;
-                var stext = "";
-                var itypetext = "";
-                if (includeState)
-                {
-                    if (status == ErrorType.ERROR)
-                    {
-                        stext = "Error";
-                    }
-                    else
-                    {
-                        stext = "Valid";
-                    }
-                    if (itype == ComponentDataLog.ImportType.INSERT)
-                    {
-                        itypetext = "Create";
-                    }
-                    else
-                    {
-                        itypetext = "Update";
-                    }
 
-                    dr["Message"] = "Status : " + stext + " ; Message : " + lg.Message + "; Import Type:" + itypetext;
-                    dr["Type"] = lg.Type;
-                }
-                else
+                clonedDT = clonedDT.Select("Index In (" + string.Join(",", indexList.ToArray()) + ")").CopyToDataTable();
+                foreach (DataRow dr in clonedDT.Rows)
                 {
-                    dr["Message"] = lg.Message;
-                    dr["Type"] = lg.Type;
+                    int indx = Convert.ToInt32(dr["index"]);
+                    var lg = this.Logs.Where(x => x.Index == indx).FirstOrDefault();
+                    var status = lg.Type;
+                    var itype = lg.ImportingType;
+                    var stext = "";
+                    var itypetext = "";
+                    if (includeState)
+                    {
+                        if (status == ErrorType.ERROR)
+                        {
+                            stext = "Error";
+                        }
+                        else
+                        {
+                            stext = "Valid";
+                        }
+                        if (itype == ComponentDataLog.ImportType.INSERT)
+                        {
+                            itypetext = "Create";
+                        }
+                        else
+                        {
+                            itypetext = "Update";
+                        }
+
+                        dr["Message"] = "Status : " + stext + " ; Message : " + lg.Message + "; Import Type:" + itypetext;
+                        dr["Type"] = lg.Type;
+                    }
+                    else
+                    {
+                        dr["Message"] = lg.Message;
+                        dr["Type"] = lg.Type;
+                    }
+                    clonedDT.Columns.Remove("Index");
                 }
+                return clonedDT;
             }
-            clonedDT.Columns.Remove("Index");
-            return clonedDT;
+            else {
+                clonedDT.Rows.Clear();
+                return clonedDT;
+            }           
         }
         public DataTable GetProcessedData(string logPath, string context, bool includeState = false)
         {
@@ -1517,7 +1518,7 @@ namespace TZ.Import
                     }
                     else
                     {
-                        stext = "Valid";
+                        stext = "Success";
                     }
                     if (itype == ComponentDataLog.ImportType.INSERT)
                     {

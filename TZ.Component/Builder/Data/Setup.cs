@@ -269,12 +269,13 @@ namespace TZ.CompExtention.Builder.Data
                 DBQuery create;
                 create = DBQuery.Create.Table(base.Schema, Builder.Schema.TalentozImportLog.Table)
                                         .Add(Builder.Schema.TalentozImportLog.ImportID)
+                                        .Add(Builder.Schema.TalentozImportLog.ClientID)
                                          .Add(Builder.Schema.TalentozImportLog.ImportSchema)
                                         .Add(Builder.Schema.TalentozImportLog.ActionBy)
                                         .Add(Builder.Schema.TalentozImportLog.Step)  
                                         .Add(Builder.Schema.TalentozImportLog.LastUPD);
                 db.ExecuteNonQuery(create);
-                CreatePrimaryKeys(Builder.Schema.TalentozImportLog.ImportID.Name
+                CreatePrimaryKeys(Builder.Schema.TalentozSchemaClientInfo.ClientID.Name + "," + Builder.Schema.TalentozImportLog.ImportID.Name
                     , Builder.Schema.TalentozImportLog.Table);
             }
             else

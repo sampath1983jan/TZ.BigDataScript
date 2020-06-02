@@ -107,7 +107,8 @@ namespace TZ.CompExtention.Builder.Data
 
         public DataTable GetView(string viewID)
         {
-            DBComparison dbView = DBComparison.Compare(DBField.Field(TalentozViewSchema.ViewID.Name), Compare.Equals, DBConst.String(viewID));
+            DBComparison dbView = DBComparison.Compare(DBField.Field(TalentozViewSchema.ViewID.Name), 
+                Compare.Equals, DBConst.String(viewID));
             DBQuery se = DBQuery.SelectAll().From(TalentozView.Table).Where(dbView);
             return db.GetDatatable(se);
         }

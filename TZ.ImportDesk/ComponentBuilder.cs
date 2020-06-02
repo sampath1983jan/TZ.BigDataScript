@@ -475,9 +475,9 @@ namespace TZ.ImportDesk
         private void back() {
             gbField.Enabled = true;
             gbAttributes.Enabled = true;
-            btnSaveComponent.Visible = false;             
+            //btnSaveComponent.Visible = false;             
             gbTableList.Enabled = true;
-            btnCancel.Visible = false;
+            //btnCancel.Visible = false;
         }
         private void btnCancel_Click(object sender, EventArgs e)
         {
@@ -561,7 +561,14 @@ namespace TZ.ImportDesk
         }
         private void cmbType_SelectedIndexChanged(object sender, EventArgs e)
         {
-            component = new CompExtention.Component(txtComponentName.Text, (CompExtention.ComponentType)((KeyValuePair<int, string>)cmbType.SelectedItem).Key);
+            if (component != null)
+            {
+                component.Type = (CompExtention.ComponentType)((KeyValuePair<int, string>)cmbType.SelectedItem).Key;
+            }
+            else {
+                component = new CompExtention.Component(txtComponentName.Text, (CompExtention.ComponentType)((KeyValuePair<int, string>)cmbType.SelectedItem).Key);
+            }
+      
         }
         private List<CompExtention.Component> filterComponent() {
             if (txtSearch.Text != "")

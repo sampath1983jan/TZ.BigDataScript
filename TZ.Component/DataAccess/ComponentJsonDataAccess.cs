@@ -185,5 +185,10 @@ namespace TZ.CompExtention
         {
             throw new NotImplementedException();
         }
+
+        public List<Attribute> GetAllAttributes(int clientID)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

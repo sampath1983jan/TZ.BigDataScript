@@ -240,7 +240,7 @@ namespace TZ.Import.Step
             return (cd);        
         }
         private ComponentData Validatepsedo( string logPath, List<ComponentCustomAction> caction) {
-            var pseudo = Context.View.Components.Where(x => x.Type == ComponentType.pseudocore).First();
+            var pseudo = Context.View.Components.Where(x => x.Type == ComponentType.pseudocore).FirstOrDefault();
             if (pseudo != null)
             {
                 ComponentData cd = new ComponentData(this.Context.ClientID, (Component)pseudo);

@@ -79,6 +79,16 @@ namespace TZ.CompExtention.ImportTemplate
                     return false;
             }           
         }
+        protected internal bool Import(string conn)
+        {
+            DataAccess.ImportTemplate itemp = new DataAccess.ImportTemplate(conn);
+            string att = Newtonsoft.Json.JsonConvert.SerializeObject(this.TemplateFields);
+            this.TemplateID = itemp.Import (this.TemplateID,ClientID, this.Name, this.Category, this.Code, this.ViewID, (int)this.Type, att, "");
+            if (this.TemplateID != "")
+                return true;
+            else
+                return false;
+        }
         public bool Remove() {
             DataAccess.ImportTemplate itemp = new DataAccess.ImportTemplate(Connection);
          return   itemp.Remove(this.TemplateID, ClientID);

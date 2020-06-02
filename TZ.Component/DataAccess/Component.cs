@@ -12,8 +12,10 @@ namespace TZ.CompExtention.DataAccess
     {
         private readonly string connection;
         public string Connection => connection;
+        Builder.Data.ComponentBuilder cb;
         public ComponentDataHandler(string conn) {
             connection = conn;
+            cb = new Builder.Data.ComponentBuilder(this.Connection);
         }
         public bool AddAttribute(string id, Attribute attr)
         {
@@ -23,9 +25,15 @@ namespace TZ.CompExtention.DataAccess
         {
            return ComponentDataHandler.GetAttributes(this.connection, componentID, clientID);
         }
+
+        public List<Attribute> GetAllAttributes( int clientID)
+        {
+            return ComponentDataHandler.GetAttributes(this.connection,  clientID);
+        }
+
         public Component GetComponent(string id)
         {
-            Builder.Data.ComponentBuilder cb = new Builder.Data.ComponentBuilder(this.connection);
+              cb = new Builder.Data.ComponentBuilder(this.connection);
             DataTable dt = new DataTable();
             dt = cb.GetComponent(id);
            /// List<Component> ComponentList = new List<Component>();
@@ -77,8 +85,19 @@ namespace TZ.CompExtention.DataAccess
             return true;
         }
 
+        protected internal bool ImportComponent(Component component)
+        {            
+            component.ID = cb.ImportComponent (component.ID,component.Name, "", Convert.ToInt32(component.Type), component.Name,
+                Newtonsoft.Json.JsonConvert.SerializeObject(component.Keys), 1, component.TableName, component.EntityKey);             
+            return true;
+        }
+        protected internal bool ClearComponent() {
+            cb.ClearComponent();
+            return true;
+        }
+
         public bool SaveAttribute(string compID,  Attribute att) {
-            Builder.Data.ComponentBuilder cb = new Builder.Data.ComponentBuilder(this.Connection);
+            cb = new Builder.Data.ComponentBuilder(this.Connection);
             att.ID = cb.SaveClientAttribute(att.ID, att.Name, att.DisplayName, att.ComponentID, att.IsRequired,
                     att.IsUnique, att.IsCore, false, att.IsSecured, Convert.ToInt32(att.LookupInstanceID), Convert.ToInt32(att.Type), att.Length, att.DefaultValue, att.FileExtension, att.IsNullable,
                     att.IsKey, att.IsAuto, att.ComponentLookup, att.ComponentLookupDisplayField, att.ClientID);
@@ -110,7 +129,6 @@ namespace TZ.CompExtention.DataAccess
             }
             return ComponentList;
         }
-
         public static List<Component> GetComponents(string conn) {
             Builder.Data.ComponentBuilder cb = new Builder.Data.ComponentBuilder(conn);
             DataTable dt = new DataTable();
@@ -133,7 +151,6 @@ namespace TZ.CompExtention.DataAccess
             }
             return ComponentList;
         }
-
         public static List<Attribute> GetAttributes(string conn, string compID, int pClientID) {
             Builder.Data.ComponentBuilder cb = new Builder.Data.ComponentBuilder(conn);
             DataTable dt = new DataTable();
@@ -176,6 +193,43 @@ namespace TZ.CompExtention.DataAccess
                 a.ComponentLookup = dr[Builder.Schema.TalentozSchemaInfo.LookupComponent.Name] != null ? dr[Builder.Schema.TalentozSchemaInfo.LookupComponent.Name].ToString() : "";
                 a.ComponentLookupDisplayField = dr[Builder.Schema.TalentozSchemaInfo.ComponentLookupDisplayName.Name] != null ? dr[Builder.Schema.TalentozSchemaInfo.ComponentLookupDisplayName.Name].ToString() : "";
                 a.IsAuto = dr[Builder.Schema.TalentozSchemaInfo.IsAuto.Name] != null ? Convert.ToBoolean(dr[Builder.Schema.TalentozSchemaInfo.IsAuto.Name]) :false;
+                atts.Add(a);
+            }
+            return atts;
+        }
+
+        public static List<Attribute> GetAttributes(string conn, int pClientID)
+        {
+            Builder.Data.ComponentBuilder cb = new Builder.Data.ComponentBuilder(conn);
+            DataTable dt = new DataTable();
+            dt = cb.GetAllAttributes();
+            List<Attribute> atts = new List<Attribute>();
+            for (int i = 0; i < dt.Rows.Count; i++)
+            {
+                //  foreach (DataRow dr in dt.Rows) {
+                DataRow dr = dt.Rows[i];
+                Attribute a = new Attribute();
+                a.ClientID = 0;
+                a.ComponentID = dr[Builder.Schema.TalentozSchemaInfo.ComponentID.Name] != null ? dr[Builder.Schema.TalentozSchemaInfo.ComponentID.Name].ToString() : "";
+                a.ID = dr[Builder.Schema.TalentozSchemaInfo.FieldID.Name] != null ? dr[Builder.Schema.TalentozSchemaInfo.FieldID.Name].ToString() : "";              
+                // a.ID = dr[Builder.Schema.TalentozSchemaInfo.ID.Name] != null ? dr[Builder.Schema.TalentozSchemaInfo.ID.Name].ToString() : "";
+                a.Name = dr[Builder.Schema.TalentozSchemaInfo.AttributeName.Name] != null ? dr[Builder.Schema.TalentozSchemaInfo.AttributeName.Name].ToString() : "";
+                a.DisplayName = dr[Builder.Schema.TalentozSchemaInfo.DisplayName.Name] != null ? dr[Builder.Schema.TalentozSchemaInfo.DisplayName.Name].ToString() : "";
+                a.IsRequired = dr[Builder.Schema.TalentozSchemaInfo.IsRequired.Name] != null ? Convert.ToBoolean(dr[Builder.Schema.TalentozSchemaInfo.IsRequired.Name]) : false;
+                a.IsUnique = dr[Builder.Schema.TalentozSchemaInfo.IsUnique.Name] != null ? Convert.ToBoolean(dr[Builder.Schema.TalentozSchemaInfo.IsUnique.Name]) : false;
+                a.IsCore = dr[Builder.Schema.TalentozSchemaInfo.IsCore.Name] != null ? Convert.ToBoolean(dr[Builder.Schema.TalentozSchemaInfo.IsCore.Name]) : false;
+                //     a.Is = dr[Builder.Schema.TalentozSchemaInfo.IsReadOnly.Name] != null ? dr[Builder.Schema.TalentozSchemaInfo.IsReadOnly.Name].ToString() : "";
+                a.IsSecured = dr[Builder.Schema.TalentozSchemaInfo.IsSecured.Name] != null ? Convert.ToBoolean(dr[Builder.Schema.TalentozSchemaInfo.IsSecured.Name]) : false;
+                a.IsNullable = dr[Builder.Schema.TalentozSchemaInfo.IsNullable.Name] != null ? Convert.ToBoolean(dr[Builder.Schema.TalentozSchemaInfo.IsNullable.Name]) : false;
+                a.IsKey = dr[Builder.Schema.TalentozSchemaInfo.ISPrimaryKey.Name] != null ? Convert.ToBoolean(dr[Builder.Schema.TalentozSchemaInfo.ISPrimaryKey.Name]) : false;
+                a.LookupInstanceID = dr[Builder.Schema.TalentozSchemaInfo.LookUpID.Name] != null ? dr[Builder.Schema.TalentozSchemaInfo.LookUpID.Name].ToString() : "";
+                a.Type = dr[Builder.Schema.TalentozSchemaInfo.AttributeType.Name] != null ? (AttributeType)dr[Builder.Schema.TalentozSchemaInfo.AttributeType.Name] : AttributeType._string;
+                a.Length = dr[Builder.Schema.TalentozSchemaInfo.Length.Name] != null ? Convert.ToInt32(dr[Builder.Schema.TalentozSchemaInfo.Length.Name]) : 0;
+                a.DefaultValue = dr[Builder.Schema.TalentozSchemaInfo.DefaultValue.Name] != null ? dr[Builder.Schema.TalentozSchemaInfo.DefaultValue.Name].ToString() : "";
+                a.FileExtension = dr[Builder.Schema.TalentozSchemaInfo.FileExtension.Name] != null ? dr[Builder.Schema.TalentozSchemaInfo.FileExtension.Name].ToString() : "";
+                a.ComponentLookup = dr[Builder.Schema.TalentozSchemaInfo.LookupComponent.Name] != null ? dr[Builder.Schema.TalentozSchemaInfo.LookupComponent.Name].ToString() : "";
+                a.ComponentLookupDisplayField = dr[Builder.Schema.TalentozSchemaInfo.ComponentLookupDisplayName.Name] != null ? dr[Builder.Schema.TalentozSchemaInfo.ComponentLookupDisplayName.Name].ToString() : "";
+                a.IsAuto = dr[Builder.Schema.TalentozSchemaInfo.IsAuto.Name] != null ? Convert.ToBoolean(dr[Builder.Schema.TalentozSchemaInfo.IsAuto.Name]) : false;
                 atts.Add(a);
             }
             return atts;

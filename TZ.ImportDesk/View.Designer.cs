@@ -39,7 +39,6 @@
             this.btnSaveView = new System.Windows.Forms.Button();
             this.txtCoreComponent = new System.Windows.Forms.TextBox();
             this.label1 = new System.Windows.Forms.Label();
-            this.grContainer.SuspendLayout();
             this.SuspendLayout();
             // 
             // lstComponentList
@@ -69,7 +68,6 @@
             // grContainer
             // 
             this.grContainer.AutoSize = true;
-            this.grContainer.Controls.Add(this.btnSaveComponent);
             this.grContainer.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.grContainer.Font = new System.Drawing.Font("Microsoft Sans Serif", 11F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.grContainer.ForeColor = System.Drawing.Color.DimGray;
@@ -88,7 +86,7 @@
             this.btnSaveComponent.FlatStyle = System.Windows.Forms.FlatStyle.Flat;
             this.btnSaveComponent.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.btnSaveComponent.ForeColor = System.Drawing.SystemColors.ButtonHighlight;
-            this.btnSaveComponent.Location = new System.Drawing.Point(619, 20);
+            this.btnSaveComponent.Location = new System.Drawing.Point(1028, 138);
             this.btnSaveComponent.Margin = new System.Windows.Forms.Padding(4, 5, 4, 5);
             this.btnSaveComponent.Name = "btnSaveComponent";
             this.btnSaveComponent.Size = new System.Drawing.Size(148, 42);
@@ -188,6 +186,7 @@
             this.AutoScroll = true;
             this.BackColor = System.Drawing.SystemColors.ButtonHighlight;
             this.ClientSize = new System.Drawing.Size(1473, 718);
+            this.Controls.Add(this.btnSaveComponent);
             this.Controls.Add(this.txtCoreComponent);
             this.Controls.Add(this.label1);
             this.Controls.Add(this.btnSaveView);
@@ -203,7 +202,6 @@
             this.Text = "View";
             this.WindowState = System.Windows.Forms.FormWindowState.Maximized;
             this.Load += new System.EventHandler(this.View_Load);
-            this.grContainer.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 

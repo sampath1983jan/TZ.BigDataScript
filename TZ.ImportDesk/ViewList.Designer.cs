@@ -152,6 +152,7 @@
             this.btnSaveComponent.TabIndex = 26;
             this.btnSaveComponent.Text = "Add Relation";
             this.btnSaveComponent.UseVisualStyleBackColor = false;
+            this.btnSaveComponent.Click += new System.EventHandler(this.btnSaveComponent_Click);
             // 
             // btnSaveName
             // 

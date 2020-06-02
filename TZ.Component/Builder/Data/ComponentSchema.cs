@@ -123,6 +123,7 @@ namespace TZ.CompExtention.Builder
         {
             public const string Table = "tz_import_log";
             public static readonly DBColumn ImportID = DBColumn.Column("ImportID", System.Data.DbType.String, 255, DBColumnFlags.Nullable);
+            public static readonly DBColumn ClientID = DBColumn.Column("ClientID", System.Data.DbType.String, 255, DBColumnFlags.Nullable);
             public static readonly DBColumn ImportSchema = DBColumn.Column("ImportSchema", System.Data.DbType.AnsiString, 5343555, DBColumnFlags.Nullable);
             public static readonly DBColumn ActionBy = DBColumn.Column("ActionBy", System.Data.DbType.Int32, 255, DBColumnFlags.Nullable);
             public static readonly DBColumn Step = DBColumn.Column("Step", System.Data.DbType.Int32, 255, DBColumnFlags.Nullable); 

@@ -121,6 +121,49 @@ namespace TZ.CompExtention.Builder.Data
                 return "";
             }
         }
+
+        protected internal string ImportComponent(string compID,string pName,
+          string category,
+          int schemaType,
+          string title,
+          string primarykeys,
+          int state,
+          string tableName,
+          string entityKey
+          )
+        {
+            string ComponentId = compID;
+            Tech.Data.Query.DBQuery dBQuery = DBQuery.InsertInto(TalentozSchema.Table)
+                .Field(TalentozSchema.ComponentID.Name)
+                 .Field(TalentozSchema.ComponentName.Name)
+                  .Field(TalentozSchema.Category.Name)
+                   .Field(TalentozSchema.ComponentType.Name)
+                    .Field(TalentozSchema.Title.Name)
+                      .Field(TalentozSchema.ComponentState.Name)
+                      .Field(TalentozSchema.TableName.Name)
+                       .Field(TalentozSchema.LastUPD.Name)
+                        .Field(TalentozSchema.PrimaryKeys.Name)
+                          .Field(TalentozSchema.EntityKey.Name)
+                      .Values(DBConst.String(ComponentId),
+                DBConst.String(pName),
+                DBConst.String(category),
+                DBConst.Int32(schemaType),
+                DBConst.String(title),
+                DBConst.Int32(state),
+                DBConst.String(tableName),
+                 DBConst.DateTime(DateTime.Today),
+                    DBConst.String(primarykeys),
+                    DBConst.String(entityKey));
+            if (db.ExecuteNonQuery(dBQuery) > 0)
+            {
+                return ComponentId;
+            }
+            else
+            {
+                return "";
+            }
+        }
+
         /// <summary>
         /// 
         /// </summary>
@@ -414,12 +457,24 @@ namespace TZ.CompExtention.Builder.Data
             for (int i = 0; i < cid.Length; i++) {
                 cids.Add(DBConst.String(cid[i]));
             }
-          //  DBComparison client = DBComparison.Equal(DBField.Field(TalentozSchemaInfo.ClientID.Name), DBConst.Int32(clientId));
+           //DBComparison client = DBComparison.Equal(DBField.Field(TalentozSchemaInfo.ClientID.Name), DBConst.Int32(clientID));
             DBComparison comp = DBComparison.In(DBField.Field(TalentozSchemaInfo.ComponentID.Name), cids.ToArray());
             DBQuery select = DBQuery.SelectAll().From(TalentozSchemaInfo.Table).WhereAll(comp);
             return db.GetDatatable(select);
         }
-
+        protected internal DataTable GetAttribute(int clientID,string componentID)
+        {
+            string[] cid = componentID.Split(',');
+            List<DBClause> cids = new List<DBClause>();
+            for (int i = 0; i < cid.Length; i++)
+            {
+                cids.Add(DBConst.String(cid[i]));
+            }
+            DBComparison client = DBComparison.Equal(DBField.Field(TalentozSchemaClientInfo.ClientID.Name), DBConst.Int32(clientID));
+            DBComparison comp = DBComparison.In(DBField.Field(TalentozSchemaClientInfo.ComponentID.Name), cids.ToArray());
+            DBQuery select = DBQuery.SelectAll().From(TalentozSchemaClientInfo.Table).WhereAll(comp);
+            return db.GetDatatable(select);
+        }
         protected internal DataTable GetClientAttribute(int clientID,string componentID)
         {
             string[] cid = componentID.Split(',');
@@ -433,5 +488,58 @@ namespace TZ.CompExtention.Builder.Data
             DBQuery select = DBQuery.SelectAll().From(TalentozSchemaClientInfo.Table).WhereAll(client, comp);
             return db.GetDatatable(select);
         }
+        protected internal DataTable GetAllAttributes()
+        {
+            //string[] cid = componentID.Split(',');
+            //List<DBClause> cids = new List<DBClause>();
+            //for (int i = 0; i < cid.Length; i++)
+            //{
+            //    cids.Add(DBConst.String(cid[i]));
+            //}
+           
+            //DBComparison comp = DBComparison.In(DBField.Field(TalentozSchemaClientInfo.ComponentID.Name), cids.ToArray());
+            DBQuery select = DBQuery.SelectAll().From(TalentozSchemaInfo.Table);
+            return db.GetDatatable(select);
+        }
+        protected internal bool ClearTemplate() {
+            DBQuery deleteView = DBQuery.DeleteFrom(TalentozTemplate.Table);
+            db.ExecuteNonQuery(deleteView);
+
+            deleteView = DBQuery.DeleteFrom(TalentozImportLog.Table);
+            db.ExecuteNonQuery(deleteView);
+
+            return true;
+        }
+        public bool ClearComponent()
+        {
+          
+            DBQuery deleteView = DBQuery.DeleteFrom(TalentozSchema.Table);
+            db.ExecuteNonQuery(deleteView);
+
+              deleteView = DBQuery.DeleteFrom(TalentozSchemaInfo.Table);
+            db.ExecuteNonQuery(deleteView);
+
+            deleteView = DBQuery.DeleteFrom(TalentozSchemaClientInfo.Table);
+            db.ExecuteNonQuery(deleteView);
+
+
+            deleteView = DBQuery.DeleteFrom(TalentozView.Table);
+            db.ExecuteNonQuery(deleteView);
+
+            deleteView = DBQuery.DeleteFrom(TalentozViewSchema.Table);
+            db.ExecuteNonQuery(deleteView);
+
+            deleteView = DBQuery.DeleteFrom(TalentozViewSchemaRelation.Table);
+            db.ExecuteNonQuery(deleteView);
+
+            deleteView = DBQuery.DeleteFrom(TalentozTemplate.Table);
+            db.ExecuteNonQuery(deleteView);
+            
+            deleteView = DBQuery.DeleteFrom(TalentozImportLog.Table);
+            db.ExecuteNonQuery(deleteView);
+            
+            return true;
+        }
+
     }
 }

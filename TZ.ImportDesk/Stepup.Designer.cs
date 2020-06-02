@@ -1,6 +1,6 @@
 ﻿namespace TZ.ImportDesk
 {
-    partial class Form1
+    partial class Stepup
     {
         /// <summary>
         /// Required designer variable.
@@ -28,19 +28,13 @@
         /// </summary>
         private void InitializeComponent()
         {
-            this.opDiaglog = new System.Windows.Forms.OpenFileDialog();
             this.lblTime = new System.Windows.Forms.Label();
             this.lbFile = new System.Windows.Forms.Label();
             this.lblStatus = new System.Windows.Forms.Label();
             this.button4 = new System.Windows.Forms.Button();
-            this.txtConnection = new System.Windows.Forms.TextBox();
             this.btnClear = new System.Windows.Forms.Button();
+            this.btnConvert = new System.Windows.Forms.Button();
             this.SuspendLayout();
-            // 
-            // opDiaglog
-            // 
-            this.opDiaglog.FileName = "opDiaglog";
-            this.opDiaglog.FileOk += new System.ComponentModel.CancelEventHandler(this.opDiaglog_FileOk);
             // 
             // lblTime
             // 
@@ -67,7 +61,7 @@
             // button4
             // 
             this.button4.Font = new System.Drawing.Font("Microsoft Sans Serif", 24F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button4.Location = new System.Drawing.Point(65, 203);
+            this.button4.Location = new System.Drawing.Point(12, 142);
             this.button4.Name = "button4";
             this.button4.Size = new System.Drawing.Size(319, 61);
             this.button4.TabIndex = 8;
@@ -75,19 +69,11 @@
             this.button4.UseVisualStyleBackColor = true;
             this.button4.Click += new System.EventHandler(this.button4_Click);
             // 
-            // txtConnection
-            // 
-            this.txtConnection.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtConnection.Location = new System.Drawing.Point(65, 120);
-            this.txtConnection.Name = "txtConnection";
-            this.txtConnection.Size = new System.Drawing.Size(665, 26);
-            this.txtConnection.TabIndex = 9;
-            // 
             // btnClear
             // 
             this.btnClear.AccessibleDescription = "bt";
             this.btnClear.Font = new System.Drawing.Font("Microsoft Sans Serif", 24F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnClear.Location = new System.Drawing.Point(411, 203);
+            this.btnClear.Location = new System.Drawing.Point(349, 142);
             this.btnClear.Name = "btnClear";
             this.btnClear.Size = new System.Drawing.Size(319, 61);
             this.btnClear.TabIndex = 10;
@@ -95,34 +81,47 @@
             this.btnClear.UseVisualStyleBackColor = true;
             this.btnClear.Click += new System.EventHandler(this.btnClear_Click);
             // 
-            // Form1
+            // btnConvert
+            // 
+            this.btnConvert.Font = new System.Drawing.Font("Microsoft Sans Serif", 16F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.btnConvert.Location = new System.Drawing.Point(12, 254);
+            this.btnConvert.Name = "btnConvert";
+            this.btnConvert.Size = new System.Drawing.Size(656, 48);
+            this.btnConvert.TabIndex = 11;
+            this.btnConvert.Text = "Convert Toz Component To Import Component";
+            this.btnConvert.TextAlign = System.Drawing.ContentAlignment.BottomCenter;
+            this.btnConvert.UseVisualStyleBackColor = true;
+            this.btnConvert.Click += new System.EventHandler(this.btnConvert_Click);
+            // 
+            // Stepup
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(800, 696);
+            this.BackColor = System.Drawing.SystemColors.ControlLightLight;
+            this.ClientSize = new System.Drawing.Size(680, 460);
+            this.Controls.Add(this.btnConvert);
             this.Controls.Add(this.btnClear);
-            this.Controls.Add(this.txtConnection);
             this.Controls.Add(this.button4);
             this.Controls.Add(this.lblStatus);
             this.Controls.Add(this.lbFile);
             this.Controls.Add(this.lblTime);
-            this.Name = "Form1";
+            this.MaximizeBox = false;
+            this.MinimizeBox = false;
+            this.Name = "Stepup";
+            this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
             this.Text = "Import Data";
             this.Load += new System.EventHandler(this.Form1_Load);
             this.ResumeLayout(false);
-            this.PerformLayout();
 
         }
 
         #endregion
-
-        private System.Windows.Forms.OpenFileDialog opDiaglog;
         private System.Windows.Forms.Label lblTime;
         private System.Windows.Forms.Label lbFile;
         private System.Windows.Forms.Label lblStatus;
         private System.Windows.Forms.Button button4;
-        private System.Windows.Forms.TextBox txtConnection;
         private System.Windows.Forms.Button btnClear;
+        private System.Windows.Forms.Button btnConvert;
     }
 }
 

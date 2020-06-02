@@ -7,6 +7,7 @@ using System.Linq;
 using System.Text;
 using System.Threading.Tasks;
 using System.Windows.Forms;
+using TZ.CompExtention.Builder.Data;
 using TZ.ImportDesk.Modal;
 
 namespace TZ.ImportDesk
@@ -72,13 +73,17 @@ namespace TZ.ImportDesk
                 {
                     ((View)f).UpdateChanges(Connection, SelectedClient);
                 }
-                else if (f.AccessibleName == "ViewList")
+                else if (f.AccessibleName == "Import")
                 {
-
+                    ((ImportTemplateBackup)f).UpdateChange(Connection, SelectedClient);
                 }
-                else if (f.AccessibleName == "ComponentList")
+                else if (f.AccessibleName == "Export")
                 {
-
+                    ((ImportDesk.Export)f).UpdateChange(Connection, SelectedClient);
+                }
+                else if (f.AccessibleName == "Setup")
+                {
+                    ((ImportDesk.Stepup  )f).UpdateChange (Connection,SelectedClient );
                 }
                 else if (f.AccessibleName == "TemplateList")
                 {
@@ -273,6 +278,56 @@ namespace TZ.ImportDesk
                 FormList.Add(childForm);
             }
         }
+        private void stepUpToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (CheckConnection() == true && SelectedClient > 0)
+            {
+                Form childForm = null;
+                if (childForm == null)
+                {
+                    childForm = new Stepup ( Connection,SelectedClient );
+                }
+                childForm.MdiParent = this;
+                childForm.Text = "Setup";
+                childForm.AccessibleName = "Setup";
+                childForm.Show();
+                FormList.Add(childForm);
+            }
+        }
+        private void ExportmnItem_Click(object sender, EventArgs e)
+        {
+            if (CheckConnection() == true && SelectedClient > 0)
+            {
+                Form childForm = null;
+                if (childForm == null)
+                {
+                    childForm = new Export(Connection, SelectedClient);
+                }
+                childForm.MdiParent = this;
+                childForm.Text = "Export";
+                childForm.AccessibleName = "Export";
+                childForm.Show();
+                FormList.Add(childForm);
+            }
+
+        }
+        private void impoortmnitem_Click(object sender, EventArgs e)
+        {
+            if (CheckConnection() == true && SelectedClient > 0)
+            {
+                Form childForm = null;
+                if (childForm == null)
+                {
+                    childForm = new ImportTemplateBackup (Connection, SelectedClient);
+                }
+                childForm.MdiParent = this;
+                childForm.Text = "Import";
+                childForm.AccessibleName = "Import";
+                childForm.Show();
+                FormList.Add(childForm);
+            }
+
+        }
         private void txtConnection_Leave_1(object sender, EventArgs e)
         {
             if (txtConnection.Text != "") {
@@ -324,16 +379,7 @@ namespace TZ.ImportDesk
         {
         }
 
-        private void ToolBarToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            toolStrip.Visible = toolBarToolStripMenuItem.Checked;
-        }
-
-        private void StatusBarToolStripMenuItem_Click(object sender, EventArgs e)
-        {
-            statusStrip.Visible = statusBarToolStripMenuItem.Checked;
-        }
-
+        
         private void CascadeToolStripMenuItem_Click(object sender, EventArgs e)
         {
             LayoutMdi(MdiLayout.Cascade);
@@ -363,5 +409,7 @@ namespace TZ.ImportDesk
             }
                
         }
+
+      
     }
 }

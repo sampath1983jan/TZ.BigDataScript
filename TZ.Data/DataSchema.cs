@@ -34,6 +34,7 @@ namespace TZ.Data
         }
         public List<DataError> ExecuteNonQuery(string[] st, string conn) {
             Data.Schema s = new Schema(this);
+            s.AfterProcessed += new EventHandler(Processed);
             return s.ExecuteNonQuery(st, conn);
         }
         public List<DataError> ExecuteNonQuery(string st, string conn)

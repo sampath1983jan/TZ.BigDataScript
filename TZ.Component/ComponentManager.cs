@@ -79,6 +79,9 @@ namespace TZ.CompExtention
             }         
         }
 
+        public static List<Attribute> GetAllAttributes(int clientID, IComponentDataAccess access) {
+            return access.GetAllAttributes(clientID);
+        }
         public static List<Attribute> GetComponentAttributes(string components,int clientID, IComponentDataAccess access) {
           return access.GetAttribute(components, clientID);
         }

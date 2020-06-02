@@ -356,10 +356,17 @@ namespace TZ.ImportDesk
                         }
                         if (te.ID != "")
                         {
-                            var tmap = tmp.TemplateFields.Where(xx => xx.ID == te.ID).FirstOrDefault();
+                            var tmap = tmp.TemplateFields.Where(xx => xx.ID == te.ID).FirstOrDefault();                           
+
                             if (tmap != null)
                             {
-                                tmap = te;
+                                for (int i = 0; i < tmp.TemplateFields.Count; i++)
+                                {
+                                    if (tmp.TemplateFields[i].ID == te.ID)
+                                    {
+                                        tmp.TemplateFields[i] = te;
+                                    }
+                                }
                             }
                             else
                             {

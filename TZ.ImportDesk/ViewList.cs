@@ -102,5 +102,10 @@ namespace TZ.ImportDesk
             
             
         }
+
+        private void btnSaveComponent_Click(object sender, EventArgs e)
+        {
+
+        }
     }
 }

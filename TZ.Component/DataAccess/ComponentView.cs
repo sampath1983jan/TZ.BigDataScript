@@ -118,6 +118,65 @@ namespace TZ.CompExtention.DataAccess
             return views;
         }
 
+        public static List<CompExtention.ComponentView> GetViews(string conn) {
+            DataTable dt = new DataTable();
+            Builder.Data.ComponentViewBuilder cv = new Builder.Data.ComponentViewBuilder(conn);
+            dt = cv.GetViews();
+            DataTable dtViewSchema = new DataTable();
+            
+            List<ComponentView> views = new List<ComponentView>();
+            foreach (DataRow dr in dt.Rows)
+            {
+                ComponentView v = new ComponentView();
+                v.ID = dr[Builder.Schema.TalentozView.ViewID.Name] == null ? "" : dr[Builder.Schema.TalentozView.ViewID.Name].ToString();
+                v.Name = dr[Builder.Schema.TalentozView.Name.Name] == null ? "" : dr[Builder.Schema.TalentozView.Name.Name].ToString();
+                v.Category = dr[Builder.Schema.TalentozView.Catgory.Name] == null ? "" : dr[Builder.Schema.TalentozView.Catgory.Name].ToString();
+                v.CoreComponent = dr[Builder.Schema.TalentozView.CoreComponent.Name] == null ? "" : dr[Builder.Schema.TalentozView.CoreComponent.Name].ToString();
+
+                //var dtVS = dtViewSchema.DefaultView.ToTable(true, "ViewID", Builder.Schema.TalentozViewSchema.ComponentID.Name,
+                //     Builder.Schema.TalentozViewSchema.ChildComponentID.Name);
+
+                dtViewSchema = cv.GetViewSchema(v.ID);
+
+                foreach (DataRow drSch in dtViewSchema.Rows)
+                {
+                    ComponentRelation vc = new ComponentRelation();
+                    vc.ViewID = v.ID;
+                    vc.ComponentID = drSch[Builder.Schema.TalentozViewSchema.ComponentID.Name] == null ? "" : drSch[Builder.Schema.TalentozViewSchema.ComponentID.Name].ToString();
+                    vc.ChildComponentID = drSch[Builder.Schema.TalentozViewSchema.ChildComponentID.Name] == null ? "" : drSch[Builder.Schema.TalentozViewSchema.ChildComponentID.Name].ToString();
+
+                    dtViewSchema.DefaultView.RowFilter =
+                        Builder.Schema.TalentozViewSchema.ComponentID.Name + " = '" + vc.ComponentID + "' AND " +
+                        Builder.Schema.TalentozViewSchema.ChildComponentID.Name + " = '" + vc.ChildComponentID + "'";
+                    var dtvsre = dtViewSchema.DefaultView.ToTable(true);
+                    dtViewSchema.DefaultView.RowFilter = "";
+                    vc.Relationship = new List<ViewRelation>();
+                    foreach (DataRow drRel in dtvsre.Rows)
+                    {
+                        var vr = new ViewRelation();
+                        vr.ID = drRel[Builder.Schema.TalentozViewSchemaRelation.ViewSchemaRelation.Name] == null ? "" :
+                            drRel[Builder.Schema.TalentozViewSchemaRelation.ViewSchemaRelation.Name].ToString();
+
+                        vr.Left = drRel[Builder.Schema.TalentozViewSchemaRelation.Parent.Name] == null ? "" :
+                            drRel[Builder.Schema.TalentozViewSchemaRelation.Parent.Name].ToString();
+
+                        vr.LeftField = drRel[Builder.Schema.TalentozViewSchemaRelation.ParentField.Name] == null ? "" :
+                            drRel[Builder.Schema.TalentozViewSchemaRelation.ParentField.Name].ToString();
+
+                        vr.Right = drRel[Builder.Schema.TalentozViewSchemaRelation.Child.Name] == null ? "" :
+                         drRel[Builder.Schema.TalentozViewSchemaRelation.Child.Name].ToString();
+
+                        vr.LeftField = drRel[Builder.Schema.TalentozViewSchemaRelation.RelatedField.Name] == null ? "" :
+                            drRel[Builder.Schema.TalentozViewSchemaRelation.RelatedField.Name].ToString();
+                        vc.Relationship.Add(vr);
+                    }
+                    v.ComponentRelations.Add(vc);
+                }
+                views.Add(v);
+            }
+            return views;
+        }
+
         public bool RemoveView(string viewID)
         {
             Builder.Data.ComponentViewBuilder cv = new Builder.Data.ComponentViewBuilder(this.Connection);

@@ -90,8 +90,7 @@ namespace TZ.ImportDesk
         }
 
         private void btnImportComponent_Click(object sender, EventArgs e)
-        {
-            
+        {            
             // TZ.CompExtention.Component
             //TZComponents
             DataTable dtLookUpComponent = new DataTable();
@@ -117,17 +116,7 @@ namespace TZ.ImportDesk
 
                         LookupComponentDisplayField.Add( f);
 
-                        //var a = LookupComponentDisplayField.Where(x => x.Key == Convert.ToInt32(f.FieldComponent)).ToList();
-                        //if (a.Count > 0)
-                        //{
-                        //    a[0].Value.Add(f);
-                        //}
-                        //else {
-                        //    var fc = new List<CompExtention.Builder.FieldElement>();
-                        //    fc.Add(f);
-                        //    LookupComponentDisplayField.Add(Convert.ToInt32(f.FieldComponent), fc);
-                        //} 
-
+                      
                     }                   
                 }
                 TalentozComponentFields.Add(f);
@@ -136,96 +125,6 @@ namespace TZ.ImportDesk
             Dictionary<int, string> tzComponentWithImportComp = new Dictionary<int, string>();
 
         
-            //foreach (int lc in LookUpComponent) {
-            // var tzc=   TZComponents.Where(x => x.ComponentID == lc).FirstOrDefault();
-            //    if (tzc != null) {
-            //        TZ.CompExtention.Component Comp = new CompExtention.Component(tzc.ComponentName, GetType(tzc.ComponentType));
-            //        Comp.TableName = tzc.TableName;
-            //        var flist = TalentozComponentFields.Where(x => x.ComponentID == lc).ToList();
-
-            //        CompExtention.Attribute _att_id1 = Comp.NewAttribute(ClientID);
-            //        _att_id1.IsKey = true;
-            //        _att_id1.Name = tzc.IDField1Name;
-            //        _att_id1.DisplayName = tzc.IDField1Name;
-            //        _att_id1.Type = CompExtention.AttributeType._number;
-            //        _att_id1.IsNullable = false;
-            //        Comp.AddAttribute(_att_id1);
-            //        Comp.Keys.Add(_att_id1);
-
-            //        CompExtention.Attribute _att_id2 = Comp.NewAttribute(ClientID);
-            //        _att_id2.IsKey = true;
-            //        _att_id2.Name = tzc.IDField2Name;
-            //        _att_id2.DisplayName = tzc.IDField2Name;
-            //        _att_id2.Type = CompExtention.AttributeType._number;
-            //        _att_id2.IsNullable = false;
-            //        Comp.AddAttribute(_att_id2);
-            //        Comp.Keys.Add(_att_id2);
-
-            //        if (tzc.IDField3Name != "") {
-            //            CompExtention.Attribute _att_id3 = Comp.NewAttribute(ClientID);
-            //            _att_id3.IsKey = true;
-            //            _att_id3.Name = tzc.IDField3Name;
-            //            _att_id3.DisplayName = tzc.IDField3Name;
-            //            _att_id3.Type = CompExtention.AttributeType._number;
-            //            _att_id3.IsNullable = false;
-            //            Comp.AddAttribute(_att_id3);
-            //            Comp.Keys.Add(_att_id3);
-            //        }
-            //        if (tzc.IDField4Name != "")
-            //        {
-            //            CompExtention.Attribute _att_id4 = Comp.NewAttribute(ClientID);
-            //            _att_id4.IsKey = true;
-            //            _att_id4.Name = tzc.IDField4Name;
-            //            _att_id4.DisplayName = tzc.IDField4Name;
-            //            _att_id4.Type = CompExtention.AttributeType._number;
-            //            _att_id4.IsNullable = false;
-            //            Comp.AddAttribute(_att_id4);
-            //            Comp.Keys.Add(_att_id4);
-            //        }
-
-            //        foreach (CompExtention.Builder.FieldElement f in flist) {
-            //    //        f = Newtonsoft.Json.JsonConvert.DeserializeObject<CompExtention.Builder.FieldElement>(dr["FieldAttribute"].ToString());
-            //          //  f.FieldInstanceID = Convert.ToInt32(dr["FieldInstanceID"].ToString());
-            //          //  f.FieldDescription = (dr["FieldDescription"].ToString());
-            //            CompExtention.Attribute _att = Comp.NewAttribute(ClientID);
-            //            _att.Name = "F_" + f.FieldInstanceID;
-            //            _att.DisplayName = f.FieldDescription;
-            //            _att.DefaultValue = f.DefaultValue;
-            //            _att.FileExtension = f.FileExtension;
-            //            _att.LookupInstanceID = f.FieldInstanceLookUpID.ToString();
-            //            _att.Length = f.MaxLength;
-            //            _att.IsUnique = f.isUnique;
-            //            _att.IsRequired = f.isRequired;
-            //            _att.IsNullable = true;
-            //            _att.IsCore = f.isCore;
-            //            _att.Type = GetAttributeType(f.FieldTypeID);
-            //            if (f.FieldTypeID == 22)
-            //            {
-            //                if (f.FieldComponent != "")
-            //                {
-            //                    var fieldComp = TZComponents.Where(x => x.ComponentID == Convert.ToInt32(f.FieldComponent)).FirstOrDefault();
-            //                    _att.ComponentLookupDisplayField = fieldComp.TitleField;
-            //                    _att.ComponentLookup = f.FieldComponent.ToString();
-            //                }
-            //            }                      
-            //            _att.IsAuto = false;
-            //            _att.IsSecured = false;
-            //            Comp.AddAttribute(_att);
-            //        }
-            //        if (cm.Save(Comp)) {
-            //            tzComponentWithImportComp.Add(tzc.ComponentID,cm.Component.ID);
-            //            foreach (KeyValuePair<int, List<CompExtention.Builder.FieldElement>> c in LookupComponentDisplayField) {
-            //                if (c.Key   == tzc.ComponentID) {
-            //                    foreach (CompExtention.Builder.FieldElement fc in c.Value) {
-            //                        var cAtt = Comp.Attributes.Where(x => x.Name == fc.FieldHelp).FirstOrDefault();
-            //                        fc.NewTextValue = cAtt.ID;
-            //                    }                           
-            //                   // 
-            //                }
-            //            }
-            //        }
-            //    }
-            //}
 
                 foreach (CompExtention.Builder.TalentozComponent comp in TZComponents) {               
 
@@ -296,19 +195,7 @@ namespace TZ.ImportDesk
                         _att.Type = Global.GetAttributeType(f.FieldTypeID);
                         _att.IsCore = f.isCore;
                         if (f.FieldTypeID == 22) {
-                            //if (f.FieldComponent != "") {
-                            //var fieldComp= LookupComponentDisplayField.Where(x => x.Key == Convert.ToInt32(f.FieldComponent)).FirstOrDefault();
-                            //    var cc = tzComponentWithImportComp.Where(x => x.Key == Convert.ToInt32(f.FieldComponent)).FirstOrDefault();
-                            //    foreach (CompExtention.Builder.FieldElement fc in fieldComp.Value)
-                            //    {
-                            //       // var cAtt = Comp.Attributes.Where(x => x.Name == fc.FieldHelp).FirstOrDefault();
-                            //       // fc.NewTextValue = cAtt.ID;
-                            //        _att.ComponentLookupDisplayField = fc.NewTextValue;
-                            //    }                               
-                            //    //if (cc != null) {
-                            //        _att.ComponentLookup = cc.Value;
-                            //   // }                                
-                            //}                      
+                                         
 
                         }                   
                      

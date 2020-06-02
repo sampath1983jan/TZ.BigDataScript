@@ -224,18 +224,37 @@ namespace TZ.Data
                         {
                             return Convert.ToDateTime(item[data.GetOffset(tf.Field)]).ToString("yyyy-MM-dd HH:mm:ss");
                         }
-                        else {
+                        else
+                        {
                             return null;
                         }
                     }
-                    else {
+                    else if (tf.Type == FieldType._bool) {
+                        if (item[data.GetOffset(tf.Field)] != "")
+                        {
+                            if (item[data.GetOffset(tf.Field)] == "true" || item[data.GetOffset(tf.Field)] == "True" || item[data.GetOffset(tf.Field)]=="1")
+                            {
+                                return true;
+                            }
+                            else {
+                                return false;
+                            }
+                        //    return Convert.ToDateTime(item[data.GetOffset(tf.Field)]).ToString("yyyy-MM-dd HH:mm:ss");
+                        }
+                        else {
+                            return false;
+                        }
+                    }
+                    else
+                    {
                         if (item[data.GetOffset(tf.Field)] != "")
                         {
                             return item[data.GetOffset(tf.Field)].Trim();
                         }
-                        else {
+                        else
+                        {
                             return null;
-                        }                          
+                        }
                     }                  
                 }));
                 c.Add(tf.Field);
@@ -492,7 +511,7 @@ namespace TZ.Data
                         ers.Add(new DataError() { Type = DataError.ErrorType.ERROR, Message = "Error:" +ex.Message + " and  values (" + string.Join("," ,item.ToArray()) + ")" });
                     }
                     finally {
-                      
+                        this.AfterProcessed(null, null);
                     }
                 }
                 trans.Commit();                 

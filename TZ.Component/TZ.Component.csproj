@@ -72,8 +72,10 @@
     <Compile Include="Implementation\IComponentView.cs" />
     <Compile Include="Implementation\IComponentViewDataAccess.cs" />
     <Compile Include="DataAccess\ComponentJsonDataAccess.cs" />
+    <Compile Include="ImportTemplate\TemplateBackup.cs" />
     <Compile Include="ImportTemplate\TemplateField.cs" />
     <Compile Include="ImportTemplate\Template.cs" />
+    <Compile Include="ImportTemplate\TemplateRestore.cs" />
     <Compile Include="LookupComponentField.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="Shared.cs" />

@@ -75,6 +75,44 @@ namespace TZ.CompExtention.DataAccess
                 return false;
             }
         }
+
+
+        protected internal string Import(string tempid,int cid, string name, string category, string code, string viewid, int type, string attributes, string pivotColumn)
+        {
+
+            string templateid = tempid;
+            Tech.Data.Query.DBQuery dBQuery = DBQuery.InsertInto(TalentozTemplate.Table)
+                .Field(TalentozTemplate.ViewID.Name)
+                .Field(TalentozTemplate.ClientID.Name)
+                .Field(TalentozTemplate.TemplateID.Name)
+                .Field(TalentozTemplate.Name.Name)
+                .Field(TalentozTemplate.TemplateCode.Name)
+                  .Field(TalentozTemplate.Category.Name)
+                  .Field(TalentozTemplate.TemplateType.Name)
+                  .Field(TalentozTemplate.ViewFields.Name)
+                     .Field(TalentozTemplate.PivotColumn.Name)
+                  .Field(TalentozTemplate.LastUPD.Name)
+                .Values(DBConst.String(viewid),
+                DBConst.Int32(cid),
+                DBConst.String(templateid),
+                DBConst.String(name),
+                DBConst.String(code),
+                DBConst.String(category),
+                  DBConst.Const(System.Data.DbType.Int32, type),
+                              DBConst.String(attributes),
+                                     DBConst.String(pivotColumn),
+                                  DBConst.Const(System.Data.DbType.DateTime, DateTime.Today)
+                  );
+            if (db.ExecuteNonQuery(dBQuery) > 0)
+            {
+                return templateid;
+            }
+            else
+            {
+                return "";
+            }
+
+        }
         protected internal string Save(int cid,string name, string category, string code, string viewid, int type, string attributes, string pivotColumn)
         {
 
