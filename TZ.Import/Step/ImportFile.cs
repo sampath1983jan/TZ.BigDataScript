@@ -111,16 +111,17 @@ namespace TZ.Import.Step
                     System.IO.File.WriteAllText(logPath + "/" + this.Context.ID + ".json", jsonline + Environment.NewLine);
                     this.Context.Status = ImportStatus.pending;
 
-                    this.Context.DataLocation = "";
-                    this.Context.View = null;
-                    this.Context.ComponentData = new List<ComponentData>();
-                     this.Context.Template.TemplateFields = new List<CompExtention.ImportTemplate.TemplateField>();
-                    this.Context.Template.View = null;
+                    var con = this.Context.Clone<ImportContext>();
+                    con.View = null;
+                    con.ComponentData = new List<ComponentData>();
+                    con.Template.TemplateFields = new List<CompExtention.ImportTemplate.TemplateField>();
+                    con.Template.View = null;
+                    con.DataLocation = "";
 
-                    Global.SaveImportContext(this.Context.ID, Newtonsoft.Json.JsonConvert.SerializeObject(this.Context), 2,
-                   this.Context.ActionBy,
-                   this.Context.Connection, this.Context.ClientID
-                   );
+                    Global.SaveImportContext(this.Context.ID, Newtonsoft.Json.JsonConvert.SerializeObject(con), 2,
+                     this.Context.ActionBy,
+                     this.Context.Connection, this.Context.ClientID
+                     );
                     //Global.SaveImportContext(Newtonsoft.Json.JsonConvert.SerializeObject(this.Context), 2,
                     //    this.Context.ID,
                     //    this.Context.ActionBy,

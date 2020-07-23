@@ -1,10 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Runtime.Remoting.Contexts;
 using System.Text;
 using System.Threading.Tasks;
 using TZ.CompExtention;
-
+using TZ.Import;
 namespace TZ.Import.Step
 {
     //Step -3
@@ -20,14 +21,14 @@ namespace TZ.Import.Step
             if (IE.Type == ErrorType.NOERROR) {
                 this.Context.Status = ImportStatus.pending;
 
+               var con= this.Context.Clone<ImportContext>();
+                con.View = null;
+                con.ComponentData = new List<ComponentData>();
+                con.Template.TemplateFields = new List<CompExtention.ImportTemplate.TemplateField>();
+                con.Template.View = null;
+                con.DataLocation = "";
 
-                this.Context.View = null;
-                this.Context.ComponentData = new List<ComponentData>();
-                 this.Context.Template.TemplateFields = new List<CompExtention.ImportTemplate.TemplateField>();
-                this.Context.Template.View = null;
-                this.Context.DataLocation = "";
-
-                Global.SaveImportContext(this.Context.ID, Newtonsoft.Json.JsonConvert.SerializeObject(this.Context), 3,
+                Global.SaveImportContext(this.Context.ID, Newtonsoft.Json.JsonConvert.SerializeObject(con), 3,
                  this.Context.ActionBy,
                  this.Context.Connection, this.Context.ClientID
                  );             

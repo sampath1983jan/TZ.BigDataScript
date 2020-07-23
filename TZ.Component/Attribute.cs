@@ -70,6 +70,7 @@ namespace TZ.CompExtention
             Name = "";
             LookupDisplayField = "";
             ComponentLookupDisplayField = "";
+            ComponentLookup = "";
         }
 
         public static AttributeType GetAttributeType(DbType type) {

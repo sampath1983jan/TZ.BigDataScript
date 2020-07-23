@@ -9,6 +9,9 @@ using TZ.Data;
 using System.IO;
 using TZ.Import.Step;
 using TZ.CompExtention.ImportTemplate;
+using Tech.Data.Schema;
+using Microsoft.SqlServer.Server;
+using Org.BouncyCastle.Crypto.Engines;
 /// <summary>
 /// 
 /// </summary>
@@ -111,12 +114,19 @@ namespace TZ.Import
         /// 
         /// </summary>
         private DataTable LookupList { get; set; }
-
+        /// <summary>
+        /// 
+        /// </summary>
         public ImportDataStatus DataStatus { get; set; }
-
+        /// <summary>
+        /// 
+        /// </summary>
         public List<ComponentDataLog> Logs { get; set; }
 
         private string LogPath { get; set; }
+        /// <summary>
+        /// 
+        /// </summary>
         private string Context { get; set; }
         /// <summary>
         /// 
@@ -139,7 +149,7 @@ namespace TZ.Import
         /// 
         /// </summary>
         /// <param name="dt"></param>
-        protected internal void ExtractDataFromSource(DataTable dt)
+        protected internal void ExtractDataFromSource(DataTable dt,bool isneedunique=false)
         {
             List<ImportFieldMap> keys = ImportFields.Where(x => x.IsKey == true).ToList();
             List<string> cols = new List<string>();
@@ -155,15 +165,31 @@ namespace TZ.Import
             {
                 dc.ColumnName = dc.ColumnName.Replace(" ", "_");
             }
-            if (keys.Count == ImportFields.Count)
+            if (isneedunique == true)
             {
-                SourceData = dt.DefaultView.ToTable(false, cols.ToArray());
-            }
-            else {
                 SourceData = dt.DefaultView.ToTable(true, cols.ToArray());
             }
+            else {
+                if (keys.Count == ImportFields.Count)
+                {
+                    SourceData = dt.DefaultView.ToTable(false, cols.ToArray());
+                }
+                else
+                {
+                    SourceData = dt.DefaultView.ToTable(true, cols.ToArray());
+                }
+            }
+            
             
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="dt"></param>
+        /// <param name="fields"></param>
+        /// <param name="attributes"></param>
+        /// <param name="conn"></param>
+        /// <returns></returns>
         protected internal DataTable ReshapeSource(DataTable dt,List<TemplateField> fields,
             List<CompExtention. Attribute> attributes,string conn) {
             List<string> cols = new List<string>();
@@ -247,8 +273,7 @@ namespace TZ.Import
             //string ssfilter = pcatt.Name + " IS NOT NULL";
             //dtShape.DefaultView.RowFilter = sfilter;
           return dtShape;
-        }
-        
+        }        
         /// <summary>
         /// 
         /// </summary>
@@ -288,6 +313,463 @@ namespace TZ.Import
             //}
             dm.Data(dt.GetCSVToArray());
             List<DataError> dataErrors = dm.ExecuteNonQuery(conn);
+
+        }       
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="dr"></param>
+        /// <returns></returns>
+        public bool IsValidRow(DataRow dr)
+        {
+            int index = Convert.ToInt32(dr["Index"]);
+            var a = this.Logs.Where(x => x.Index == index).FirstOrDefault();
+            if (a != null)
+            {
+                if (a.Type == ErrorType.ERROR)
+                {
+                    return false;
+                }
+                else
+                    return true;
+            }
+            else
+                return false;
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="DataCount"></param>
+        /// <param name="percentageToComplete"></param>
+        /// <param name="mss"></param>
+        /// <param name="Status"></param>
+        private void AddImportStatus(int DataCount,double percentageToComplete,string mss, DataStatus Status) {
+            DataStatus = new ImportDataStatus();
+            DataStatus.ComponentID = this.Component.ID;
+            DataStatus.ComponentName = this.Component.Name;
+            DataStatus.DataProcessedCount = DataCount;
+            DataStatus.PercentageToComplete = percentageToComplete;
+            DataStatus.Messge = mss;
+            DataStatus.Status = Status;
+            WriteImportStatus(LogPath,Newtonsoft.Json.JsonConvert.SerializeObject(DataStatus ), Context);
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="conn"></param>
+        /// <param name="logPath"></param>
+        /// <param name="context"></param>
+        protected internal void PushPseudo(string conn, string logPath, string context) {
+            this.LogPath = logPath;
+            this.Context = context;
+            AddImportStatus(0, 0, "Import Started", Import.DataStatus.STARTED);
+            DataTable InsertData = new DataTable();
+            DataTable dt = new DataTable();
+            TotalImportRecord = ValidDataSource.Rows.Count;
+            InsertData= ValidDataSource.Copy();
+         
+            AddImportStatus(0, 0, "Data perparation progress to import", Import.DataStatus.STARTED);
+
+            DataManager dm = new DataManager();
+            List<string> columnNames = new List<string>();
+
+            dt = InsertData.Copy();
+
+            foreach (ImportFieldMap ifm in ImportFields)
+            {
+                var att = this.Component.Attributes.Where(x => x.ID == ifm.DataField).FirstOrDefault();
+                if (ifm.FileFields != null)
+                {
+                    if (dt.Columns.Contains(ifm.FileFields) && (!dt.Columns.Contains(att.Name)))
+                    {
+                        dt.Columns[ifm.FileFields].ColumnName = att.Name;
+                    }
+                }
+            }
+                 
+
+         
+            if (dt.Columns.Contains("index"))
+            {
+                dt.Columns.Remove("index");
+            }
+            foreach (DataColumn dc in dt.Columns)
+            {
+
+                if (dc.DataType == typeof(DateTime))
+                {
+                    dm.InsertInto(dc.ColumnName, FieldType._datetime);
+                }
+                else if (dc.DataType == typeof(Boolean))
+                {
+                    dm.InsertInto(dc.ColumnName, FieldType._bool);
+                }
+                else
+                {
+                    dm.InsertInto(dc.ColumnName, FieldType._string);
+                }
+                columnNames.Add(dc.ColumnName);
+            }
+            dm.tableName(this.Component.TableName);
+
+            dm.Data(dt.GetCSVToArray());
+
+            dm.AfterProcessed += new EventHandler(AfterDataImported);
+            List<DataError> dataErrors = dm.ExecuteNonQuery(conn);
+            List<ImportError> er = new List<ImportError>();
+            int index = 0;
+            foreach (DataError dr in dataErrors)
+            {
+                if (InsertData.Rows.Count > index)
+                {
+                    var datarow = InsertData.Rows[index];
+                    var dataindex = Convert.ToInt32(datarow["index"]);
+                    var log = Logs.Where(x => x.Index == dataindex).FirstOrDefault();
+                    if (log != null)
+                    {
+                        if (dr.Type == DataError.ErrorType.ERROR)
+                        {
+                            log.Message = dr.Message;
+                            log.Type = ErrorType.ERROR;
+                        }
+                        else
+                        {
+                            log.Message = "Data Imported Successfully";
+                            log.Type = ErrorType.NOERROR;
+                        }
+                    }
+                    else
+                    {
+                        Logs.Add(new ComponentDataLog() { Type = ErrorType.ERROR, Message = "Unknow record found" + ": " + dataindex });
+                    }
+
+                    index = index + 1;
+                }
+                else
+                {
+                    Logs.Add(new ComponentDataLog() { Type = ErrorType.ERROR, Message = "Unknow record found" });
+                }
+            }
+            if (dataErrors.Count <= dt.Rows.Count)
+            {
+                if (Validation != null)
+                {
+                    this.DataStatus.PercentageToComplete = this.DataStatus.PercentageToComplete + (this.DataStatus.PercentageToComplete * .12);
+                    if (this.DataStatus.PercentageToComplete >= 100)
+                    {
+                        this.DataStatus.PercentageToComplete = 90;
+                    }
+                    AddImportStatus(this.DataStatus.DataProcessedCount, this.DataStatus.PercentageToComplete, "Processing support information", Import.DataStatus.STARTED);
+                    // send error index
+                    Validation.AfterSave(this, dt); // dt change to InsertData with error status based on that depended what to save
+                }
+            }
+
+            TotalInserted = Logs.Where(x => x.Type == ErrorType.NOERROR && x.ImportingType == ComponentDataLog.ImportType.INSERT).ToList().Count();
+            AddImportStatus(this.DataStatus.DataProcessedCount, 100, "Processing support information", Import.DataStatus.COMPLETED);
+
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="conn"></param>
+        /// <param name="logPath"></param>
+        /// <param name="context"></param>
+        protected internal void PushMeta(string conn, string logPath, string context)
+        {
+            this.LogPath = logPath;
+            this.Context = context;
+            AddImportStatus(0, 0, "Import Started", Import.DataStatus.STARTED);
+            DataTable InsertData = new DataTable();
+            TotalImportRecord = ValidDataSource.Rows.Count;
+            //DataTable dtLog = this.Logs.ToDataTable<ComponentDataLog>();
+            var Insertlog = this.Logs.Where(x => x.Type == ErrorType.NOERROR && x.IsExist == false).ToList();
+            List<int> indexList = Insertlog.Select(log => log.Index).ToList();
+            if (Insertlog.Count > 0)
+            {
+                string keyName = "";
+                InsertData = ValidDataSource.Select("Index In (" + string.Join(",", indexList.ToArray()) + ")").CopyToDataTable();
+                SuccessRecord = ValidDataSource.Rows.Count;
+                foreach (CompExtention.Attribute a in Component.Keys)
+                {
+                    if (a.Name != "ClientID")
+                    {
+                        keyName = a.Name;
+                    }
+                }
+
+                AddImportStatus(0, 0, "Set Unique Keys to Dataset", Import.DataStatus.STARTED);
+                DataTable dt = InsertData.Copy();
+                if (dt.Columns.Contains("Index"))
+                {
+                    dt.Columns.Remove("Index");
+                }
+
+                foreach (ImportFieldMap ifm in ImportFields)
+                {
+                    var att = this.Component.Attributes.Where(x => x.ID == ifm.DataField).FirstOrDefault();
+                    if (ifm.FileFields != null)
+                    {
+                        if (dt.Columns.Contains(ifm.FileFields) && (!dt.Columns.Contains(att.Name)))
+                        {
+                            dt.Columns[ifm.FileFields].ColumnName = att.Name;
+                        }
+                    }
+                }
+                AddImportStatus(0, 0, "Data perparation progress to import", Import.DataStatus.STARTED);
+                DataManager dm = new DataManager();
+                List<string> columnNames = new List<string>();
+                foreach (DataColumn dc in dt.Columns)
+                {
+
+                    if (dc.DataType == typeof(DateTime))
+                    {
+                        dm.InsertInto(dc.ColumnName, FieldType._datetime);
+                    }
+                    else if (dc.DataType == typeof(Boolean))
+                    {
+                        dm.InsertInto(dc.ColumnName, FieldType._bool);
+                    }
+                    else
+                    {
+                        var dd = this.Component.Attributes.Where(x => x.Name == dc.ColumnName).FirstOrDefault();
+                        if (dd != null)
+                        {
+                            if (dd.Type == AttributeType._bit)
+                            {
+                                dm.InsertInto(dc.ColumnName, FieldType._bool);
+                            }
+                            else if (dd.Type == AttributeType._datetime || dd.Type == AttributeType._date)
+                            {
+                                dm.InsertInto(dc.ColumnName, FieldType._datetime);
+                            }
+                            else
+                            {
+                                dm.InsertInto(dc.ColumnName, FieldType._string);
+                            }
+                        }
+                        else
+                        {
+                            dm.InsertInto(dc.ColumnName, FieldType._string);
+                        }
+
+                    }
+                    columnNames.Add(dc.ColumnName);
+                }
+                dm.tableName(this.Component.TableName);
+
+                dm.Data(dt.GetCSVToArray());
+
+                dm.AfterProcessed += new EventHandler(AfterDataImported);
+                List<DataError> dataErrors = dm.ExecuteNonQuery(conn);
+                List<ImportError> er = new List<ImportError>();
+                int index = 0;
+                foreach (DataError dr in dataErrors)
+                {
+                    if (InsertData.Rows.Count > index)
+                    {
+                        var datarow = InsertData.Rows[index];
+                        var dataindex = Convert.ToInt32(datarow["index"]);
+                        var log = Logs.Where(x => x.Index == dataindex).FirstOrDefault();
+                        if (log != null)
+                        {
+                            if (dr.Type == DataError.ErrorType.ERROR)
+                            {
+                                log.Message = dr.Message;
+                                log.Type = ErrorType.ERROR;
+                            }
+                            else
+                            {
+                                log.Message = "Data Imported Successfully";
+                                log.Type = ErrorType.NOERROR;
+                            }
+                        }
+                        else
+                        {
+                            Logs.Add(new ComponentDataLog() { Type = ErrorType.ERROR, Message = "Unknow record found" + ": " + dataindex });
+                        }
+
+                        index = index + 1;
+                    }
+                    else
+                    {
+                        Logs.Add(new ComponentDataLog() { Type = ErrorType.ERROR, Message = "Unknow record found" });
+                    }
+                }
+                if (dataErrors.Count <= dt.Rows.Count)
+                {
+                    if (Validation != null)
+                    {
+                        this.DataStatus.PercentageToComplete = this.DataStatus.PercentageToComplete + (this.DataStatus.PercentageToComplete * .12);
+                        if (this.DataStatus.PercentageToComplete >= 100)
+                        {
+                            this.DataStatus.PercentageToComplete = 90;
+                        }
+                        AddImportStatus(this.DataStatus.DataProcessedCount, this.DataStatus.PercentageToComplete, "Processing support information", Import.DataStatus.STARTED);
+                        // send error index
+                        Validation.AfterSave(this, dt); // dt change to InsertData with error status based on that depended what to save
+                    }
+                }
+
+                TotalInserted = Logs.Where(x => x.Type == ErrorType.NOERROR && x.ImportingType == ComponentDataLog.ImportType.INSERT).ToList().Count();
+                AddImportStatus(this.DataStatus.DataProcessedCount, 100, "Processing support information", Import.DataStatus.COMPLETED);
+
+
+            }
+
+            var updatelog = this.Logs.Where(x => x.Type == ErrorType.NOERROR && x.IsExist == true).ToList();
+            List<int> updateindex = updatelog.Select(log => log.Index).ToList();
+            if (updateindex.Count() > 0)
+            {
+                DataTable updateData = new DataTable();
+                updateData = ValidDataSource.Select("Index In (" + string.Join(",", updateindex.ToArray()) + ")").CopyToDataTable();
+                //  updateData = ValidDataSource.AsEnumerable().Where(x => x["Index"].ToString().Contains(string.Join(",", updateindex.ToArray()))).AsDataView().ToTable(true);
+                if (updateData.Rows.Count > 0)
+                {
+                    List<string> columnNames = new List<string>();
+                    var dm = new DataManager();
+                    int index = 0;
+                    DataTable dt = new DataTable();
+                    dt = updateData.Copy();
+
+                    if (dt.Columns.Contains("Index"))
+                    {
+                        dt.Columns.Remove("Index");
+                    }
+
+                    foreach (ImportFieldMap ifm in ImportFields)
+                    {
+                        var att = this.Component.Attributes.Where(x => x.ID == ifm.DataField).FirstOrDefault();
+                        if (ifm.FileFields != null)
+                        {
+                            if (dt.Columns.Contains(ifm.FileFields) && (!dt.Columns.Contains(att.Name)))
+                            {
+                                dt.Columns[ifm.FileFields].ColumnName = att.Name;
+                            }
+                        }
+                    }
+                    foreach (CompExtention.Attribute key in this.Component.Keys)
+                    {
+                        if (key.Name.ToLower() != "clientid")
+                        {
+                            if (!dt.Columns.Contains(key.Name)) {
+                                dt.Columns.Add(new DataColumn(key.Name, typeof(int)));
+                            }                            
+                            int i = 0;
+                            foreach (ComponentDataLog log in updatelog)
+                            {
+                                dt.Rows[i][key.Name] = log.ExistKey;
+                                i = i + 1;
+                            }
+                        }
+                    }
+
+
+                    dm = new DataManager();
+                    dm.tableName(this.Component.TableName);
+                    foreach (DataColumn dc in dt.Columns)
+                    {
+
+                        string dval = "";
+                        if (dc.DataType == typeof(DateTime))
+                        {
+                            //dval = Convert.ToDateTime(dr[dc.ColumnName]).ToString("yyyy-MM-dd HH:mm:ss");
+                            dm.UpdateInto(dc.ColumnName, FieldType._datetime, "");
+                        }
+                        else if (dc.DataType == typeof(Boolean))
+                        {
+                            dm.UpdateInto(dc.ColumnName, FieldType._bool, "");
+                        }
+                        else
+                        {
+                            dm.UpdateInto(dc.ColumnName, FieldType._string, "");
+                        }
+
+                        //}
+                        columnNames.Add(dc.ColumnName);
+                    }
+                    foreach (CompExtention.Attribute key in this.Component.Keys)
+                    {
+                        dm.Where(this.Component.TableName, key.Name, "=", "");
+                    }
+                    if (dm.GetSchema().Wheres.Count == 0)
+                    {
+                        Errors.Add(new ImportError()
+                        {
+                            Message = "No Key field set while update record",
+                            Type = ErrorType.ERROR,
+                        });
+                    }
+                    else
+                    {
+                        if (dm.GetSchema().Wheres.Where(x => x.FieldName.ToLower() == "clientid").FirstOrDefault() == null)
+                        {
+                            dm.Where(this.Component.TableName, "ClientID", "=", ClientID.ToString());
+                        }
+                        //     bdata.Add(dm.GetSchema());
+                    }
+                    dm.AfterProcessed += new EventHandler(AfterDataImported);
+                    TotalUpdated = 0;
+                    //}
+                    var path = logPath + "/" + Guid.NewGuid() + ".csv";
+                    File.WriteAllText(path, "");
+                    dt.ToCSV(path);
+                    var updateerr = dm.ExecuteNonQuery(path, conn);
+                    index = 0;
+                    foreach (DataError drr in updateerr)
+                    {
+                        if (updateData.Rows.Count > index)
+                        {
+                            var datarow = updateData.Rows[index];
+                            int dataindex = 0;
+                            var ulog = Logs.Where(x => x.Index == dataindex).FirstOrDefault();
+                            if (ulog != null)
+                            {
+                                if (drr.Type == DataError.ErrorType.ERROR)
+                                {
+                                    ulog.Message = drr.Message;
+                                    ulog.Type = ErrorType.ERROR;
+                                    ulog.ImportingType = ComponentDataLog.ImportType.UPDATE;
+
+                                }
+                                else
+                                {
+                                    ulog.Message = "Data updated successfully";
+                                    ulog.Type = ErrorType.NOERROR;
+                                    ulog.ImportingType = ComponentDataLog.ImportType.UPDATE;
+                                }
+                            }
+                            index = index + 1;
+                        }
+                    }
+                    TotalUpdated = updatelog.Where(x => x.Type == ErrorType.NOERROR).ToList().Count();
+                    if (Validation != null)
+                    {
+                        try
+                        {
+                            this.DataStatus.PercentageToComplete = this.DataStatus.PercentageToComplete + (this.DataStatus.PercentageToComplete * .12);
+                            if (this.DataStatus.PercentageToComplete > 100)
+                            {
+                                this.DataStatus.PercentageToComplete = 90;
+                            }
+                            AddImportStatus(this.DataStatus.DataProcessedCount, this.DataStatus.PercentageToComplete, "Processing support information", Import.DataStatus.STARTED);
+                            Validation.AfterUpdate(this, dt);
+                        }
+                        catch (Exception ex)
+                        {
+
+                        }
+                    }
+
+                    ValidDataSource.Rows.Clear();
+                    ValidDataSource.Merge(InsertData);
+                    ValidDataSource.Merge(updateData);
+                }
+            }
+
+            AddImportStatus(this.DataStatus.DataProcessedCount, 100, "Import Completed", Import.DataStatus.COMPLETED);
+            ErrorRecord = Logs.Where(x => x.Type == ErrorType.ERROR).ToList().Count();
+
 
         }
         /// <summary>
@@ -479,6 +961,7 @@ namespace TZ.Import
                     sb.AppendLine(string.Join(",", fields));
                 }
                 dm.Data(sb.ToString());
+                dm.AfterProcessed += new EventHandler(AfterDataImported);
                 List<DataError> dataErrors = dm.ExecuteNonQuery(conn);
                 int indexx = 0;
                 foreach (DataError derr in dataErrors)
@@ -504,16 +987,17 @@ namespace TZ.Import
                 {
                     Validation.AfterSave(this, dt);
                 }
-             
+
                 TotalInserted = Logs.Where(x => x.Type == ErrorType.NOERROR && x.ImportingType == ComponentDataLog.ImportType.INSERT).ToList().Count;
-               
+
             }
             else
             {
                 var updatelog = this.Logs.Where(x => x.Type == ErrorType.NOERROR && x.ImportingType == ComponentDataLog.ImportType.UPDATE && x.IsExist == true).ToList();
                 List<int> updateindex = updatelog.Select(log => log.Index).ToList();
                 // update behavior
-                if (updateindex.Count() > 0) {
+                if (updateindex.Count() > 0)
+                {
                     DataTable updateData = new DataTable();
                     updateData = ValidDataSource.Select("Index In (" + string.Join(",", updateindex.ToArray()) + ")").CopyToDataTable();
                     if (updateData.Rows.Count > 0)
@@ -650,6 +1134,7 @@ namespace TZ.Import
                             var path = logPath + "/" + Guid.NewGuid() + ".csv";
                             File.WriteAllText(path, "");
                             dt.ToCSV(path);
+                             dm.AfterProcessed += new EventHandler(AfterDataImported);
                             var updateerr = dm.ExecuteNonQuery(path, conn);
 
                             int indexx = 0;
@@ -681,146 +1166,450 @@ namespace TZ.Import
                         }
                     }
                 }
-                
+
             }
             ErrorRecord = Logs.Where(x => x.Type == ErrorType.ERROR).ToList().Count;
         }
-        public bool IsValidRow(DataRow dr)
+
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="logPath"></param>
+        /// <param name="write"></param>
+        /// <param name="context"></param>        
+        protected internal void PushTrasaction(string conn, string logPath, string contextid)
         {
-            int index = Convert.ToInt32(dr["Index"]);
-            var a = this.Logs.Where(x => x.Index == index).FirstOrDefault();
-            if (a != null)
-            {
-                if (a.Type == ErrorType.ERROR)
-                {
-                    return false;
-                }
-                else
-                    return true;
-            }
-            else
-                return false;
-        }
-        private void AddImportStatus(int DataCount,double percentageToComplete,string mss, DataStatus Status) {
-            DataStatus = new ImportDataStatus();
-            DataStatus.ComponentID = this.Component.ID;
-            DataStatus.ComponentName = this.Component.Name;
-            DataStatus.DataProcessedCount = DataCount;
-            DataStatus.PercentageToComplete = percentageToComplete;
-            DataStatus.Messge = mss;
-            DataStatus.Status = Status;
-            WriteImportStatus(LogPath,Newtonsoft.Json.JsonConvert.SerializeObject(DataStatus ), Context);
-        }
-
-        protected internal void PushPseudo(string conn, string logPath, string context) {
             this.LogPath = logPath;
-            this.Context = context;
-            AddImportStatus(0, 0, "Import Started", Import.DataStatus.STARTED);
+            this.Context = contextid;
             DataTable InsertData = new DataTable();
-            DataTable dt = new DataTable();
             TotalImportRecord = ValidDataSource.Rows.Count;
-            InsertData= ValidDataSource.Copy();
-         
-            AddImportStatus(0, 0, "Data perparation progress to import", Import.DataStatus.STARTED);
 
-            DataManager dm = new DataManager();
-            List<string> columnNames = new List<string>();
+            InsertData = ValidDataSource.Copy();
 
-            dt = InsertData.Copy();
+            #region Prevalidation before push the Transaction
 
             foreach (ImportFieldMap ifm in ImportFields)
             {
                 var att = this.Component.Attributes.Where(x => x.ID == ifm.DataField).FirstOrDefault();
-                if (ifm.FileFields != null)
+                if (InsertData.Columns.Contains(ifm.FileFields))
                 {
-                    if (dt.Columns.Contains(ifm.FileFields) && (!dt.Columns.Contains(att.Name)))
+                    if (att != null)
                     {
-                        dt.Columns[ifm.FileFields].ColumnName = att.Name;
+                        InsertData.Columns[ifm.FileFields].ColumnName = att.Name;
                     }
                 }
             }
-                 
 
-         
-            if (dt.Columns.Contains("index"))
+            foreach (DataRow row in InsertData.Rows)
             {
-                dt.Columns.Remove("index");
-            }
-            foreach (DataColumn dc in dt.Columns)
-            {
-
-                if (dc.DataType == typeof(DateTime))
-                {
-                    dm.InsertInto(dc.ColumnName, FieldType._datetime);
-                }
-                else if (dc.DataType == typeof(Boolean))
-                {
-                    dm.InsertInto(dc.ColumnName, FieldType._bool);
-                }
-                else
-                {
-                    dm.InsertInto(dc.ColumnName, FieldType._string);
-                }
-                columnNames.Add(dc.ColumnName);
-            }
-            dm.tableName(this.Component.TableName);
-
-            dm.Data(dt.GetCSVToArray());
-
-            dm.AfterProcessed += new EventHandler(AfterDataImported);
-            List<DataError> dataErrors = dm.ExecuteNonQuery(conn);
-            List<ImportError> er = new List<ImportError>();
-            int index = 0;
-            foreach (DataError dr in dataErrors)
-            {
-                if (InsertData.Rows.Count > index)
-                {
-                    var datarow = InsertData.Rows[index];
-                    var dataindex = Convert.ToInt32(datarow["index"]);
-                    var log = Logs.Where(x => x.Index == dataindex).FirstOrDefault();
-                    if (log != null)
+                if (this.ParentComponentData.Count > 0) {
+                    SetLinkKeys(row, true);
+                    int idx = Convert.ToInt32(row["index"]);
+                    var lg = this.Logs.Where(x => x.Index == idx).FirstOrDefault();
+                    if (lg.Type != ErrorType.ERROR)
                     {
-                        if (dr.Type == DataError.ErrorType.ERROR)
+                        if (Validation != null)
                         {
-                            log.Message = dr.Message;
-                            log.Type = ErrorType.ERROR;
+                            var err = Validation.ValidateLink(this, row);
+                            if (err.Type == ErrorType.ERROR)
+                            {
+                                lg.Message = err.Message;
+                                lg.Type = ErrorType.ERROR;
+                                lg.ImportingType = ComponentDataLog.ImportType.INSERT;
+                                continue;
+                            }
                         }
-                        else
+                    }
+                }                
+            }
+            #endregion
+
+
+            var Insertlog = this.Logs.Where(x => x.Type == ErrorType.NOERROR && x.ImportingType == ComponentDataLog.ImportType.INSERT && x.IsExist == false).ToList();
+            List<int> indexList = Insertlog.Select(log => log.Index).ToList();
+            if (Insertlog.Count > 0)
+            {
+                InsertData = InsertData.Select("Index In (" + string.Join(",", indexList.ToArray()) + ")").CopyToDataTable();
+                // InsertData = InsertData.AsEnumerable().Where(x => x["Index"].ToString().Contains(string.Join(",", indexList.ToArray()))).AsDataView().ToTable(true);
+                SuccessRecord = InsertData.Rows.Count;
+
+                int Index = Global.GetCurrentID(this.Component.EntityKey, conn);
+                Index = Index + 1;
+                if (Index == 0)
+                {
+                    Index = 1;
+                }
+                int LastID = Global.GetNextID(this.Component.EntityKey, conn, InsertData.Rows.Count);
+
+                string keyName = "";
+                if (this.Component.Type == ComponentType.core)
+                {
+                    foreach (CompExtention.Attribute a in Component.Keys)
+                    {
+                        if (a.Name != "ClientID")
                         {
-                            log.Message = "Data Imported Successfully";
-                            log.Type = ErrorType.NOERROR;
+                            keyName = a.Name;
                         }
+                    }
+                }
+                else if (this.Component.Type == ComponentType.transaction)
+                {
+
+                    foreach (CompExtention.Attribute a in Component.Keys)
+                    {
+                        if (a.Name != "ClientID")
+                        {
+                            if (this.Component.Attributes.Where(x => x.Name == a.Name && a.Type == AttributeType._componentlookup).ToList().Count == 0)
+                            {
+                                keyName = a.Name;
+                            }
+                        }
+                    }
+                }
+                AddImportStatus(0, 0, "Set Unique Keys to Dataset", Import.DataStatus.STARTED);
+             
+                
+               
+
+                if (!InsertData.Columns.Contains(keyName))
+                {
+                    // create a reader
+                    DataTableReader dr = InsertData.CreateDataReader();
+                    //clone original
+                    DataTable clonedDT = InsertData.Clone();
+                    //add identity column
+                    clonedDT.Columns.Add(new DataColumn() { AutoIncrement = true, ColumnName = keyName, AutoIncrementStep = 1, DataType = typeof(Int32), AutoIncrementSeed = Index });
+                    //load clone from reader, identity col will auto-populate with values
+                    clonedDT.Load(dr);
+                    InsertData = clonedDT;
+                    clonedDT.Dispose();
+                    ImportFields.Add(new ImportFieldMap() { ComponentID = this.Component.ID, DataField = keyName });
+                }
+                DataManager dm = new DataManager();
+                DataTable dt = InsertData.Copy();
+                if (dt.Columns.Contains("Index"))
+                {
+                    dt.Columns.Remove("Index");
+                }
+                List<string> cols = new List<string>();
+                foreach (DataColumn dc in dt.Columns)
+                {
+                    bool isKeyCol = false;
+                    foreach (ComponentData c in this.ParentComponentData)
+                    {
+                        var a = c.Component.Keys.Where(x => x.Name == dc.ColumnName).FirstOrDefault();
+                        if (a != null)
+                        {
+                            isKeyCol = true;
+                        }
+                    }
+
+                    foreach (CompExtention.Attribute att in this.Component.Attributes)
+                    {
+                        if (att.Name == dc.ColumnName)
+                        {
+                            isKeyCol = true;
+                        }
+                    }
+
+                    if (isKeyCol == false)
+                    {
+                        cols.Add(dc.ColumnName);
+                    }
+                }
+
+                foreach (string s in cols)
+                {
+                    dt.Columns.Remove(s);
+                }
+
+                foreach (ImportFieldMap ifm in ImportFields)
+                {
+                    var att = this.Component.Attributes.Where(x => x.ID == ifm.DataField).FirstOrDefault();
+                    if (ifm.FileFields != null)
+                    {
+                        if (dt.Columns.Contains(ifm.FileFields) && (!dt.Columns.Contains(att.Name)))
+                        {
+                            dt.Columns[ifm.FileFields].ColumnName = att.Name;
+                        }
+                    }
+                }
+
+                List<string> columnNames = new List<string>();
+                foreach (DataColumn dc in dt.Columns)
+                {
+
+                    if (dc.DataType == typeof(DateTime))
+                    {
+                        dm.InsertInto(dc.ColumnName, FieldType._datetime);
+                    }
+                    else if (dc.DataType == typeof(Boolean))
+                    {
+                        dm.InsertInto(dc.ColumnName, FieldType._bool);
                     }
                     else
                     {
-                        Logs.Add(new ComponentDataLog() { Type = ErrorType.ERROR, Message = "Unknow record found" + ": " + dataindex });
+                        dm.InsertInto(dc.ColumnName, FieldType._string);
                     }
 
-                    index = index + 1;
+                    columnNames.Add(dc.ColumnName);
                 }
-                else
+
+                dm.tableName(this.Component.TableName);
+                //IEnumerable<string> columnNames = ImportFields.
+                //                      Select(column => column.DataField);
+                StringBuilder sb = new StringBuilder();
+                sb.AppendLine(string.Join(",", columnNames));
+
+                foreach (DataRow row in dt.Rows)
                 {
-                    Logs.Add(new ComponentDataLog() { Type = ErrorType.ERROR, Message = "Unknow record found" });
+                    string[] fields = row.ItemArray.Select(field => field.ToString()).ToArray();
+                    sb.AppendLine(string.Join(",", fields));
                 }
-            }
-            if (dataErrors.Count <= dt.Rows.Count)
-            {
+                dm.Data(sb.ToString());
+                dm.AfterProcessed += new EventHandler(AfterDataImported);
+                List<DataError> dataErrors = dm.ExecuteNonQuery(conn);
+                int indexx = 0;
+                foreach (DataError derr in dataErrors)
+                {
+                    var drow = InsertData.Rows[indexx];
+                    var a = Convert.ToInt32(drow["Index"]);
+                    var lg = Logs.Where(x => x.Index == a).FirstOrDefault();
+                    if (lg != null)
+                    {
+                        lg.Message = derr.Message;
+                        lg.ImportingType = ComponentDataLog.ImportType.INSERT;
+                        if (derr.Type == DataError.ErrorType.ERROR)
+                        {
+                            lg.Type = ErrorType.ERROR;
+                        }
+                        else if (derr.Type == DataError.ErrorType.NOERROR)
+                        {
+                            lg.Type = ErrorType.NOERROR;
+                        }
+                    }
+                }
                 if (Validation != null)
                 {
-                    this.DataStatus.PercentageToComplete = this.DataStatus.PercentageToComplete + (this.DataStatus.PercentageToComplete * .12);
-                    if (this.DataStatus.PercentageToComplete >= 100)
-                    {
-                        this.DataStatus.PercentageToComplete = 90;
-                    }
-                    AddImportStatus(this.DataStatus.DataProcessedCount, this.DataStatus.PercentageToComplete, "Processing support information", Import.DataStatus.STARTED);
-                    // send error index
-                    Validation.AfterSave(this, dt); // dt change to InsertData with error status based on that depended what to save
+                    Validation.AfterSave(this, dt);
                 }
+
+                TotalInserted = Logs.Where(x => x.Type == ErrorType.NOERROR && x.ImportingType == ComponentDataLog.ImportType.INSERT).ToList().Count;
+            
+                AddImportStatus(this.DataStatus.DataProcessedCount, 100, "Processing support information", Import.DataStatus.COMPLETED);
             }
+            else
+            {
+                var updatelog = this.Logs.Where(x => x.Type == ErrorType.NOERROR && x.ImportingType == ComponentDataLog.ImportType.UPDATE && x.IsExist == true).ToList();
+                List<int> updateindex = updatelog.Select(log => log.Index).ToList();
+                // update behavior
+                if (updateindex.Count() > 0)
+                {
+                    DataTable updateData = new DataTable();
+                    updateData = ValidDataSource.Select("Index In (" + string.Join(",", updateindex.ToArray()) + ")").CopyToDataTable();
+                    if (updateData.Rows.Count > 0)
+                    {
+                        if (Validation != null)
+                        {
+                            foreach (DataRow row in updateData.Rows)
+                            {
+                                int idx = Convert.ToInt32(row["index"]);
+                                var lg = this.Logs.Where(x => x.Index == idx).FirstOrDefault();
+                                if (lg.Type != ErrorType.ERROR)
+                                {
+                                    if (Validation != null)
+                                    {
+                                        var err = Validation.ValidateLink(this, row);
+                                        if (err.Type == ErrorType.ERROR)
+                                        {
+                                            lg.Message = err.Message;
+                                            lg.Type = ErrorType.ERROR;
+                                            lg.ImportingType = ComponentDataLog.ImportType.UPDATE;
+                                            continue;
+                                        }
+                                    }
+                                }
+                            }
+                        }
 
-            TotalInserted = Logs.Where(x => x.Type == ErrorType.NOERROR && x.ImportingType == ComponentDataLog.ImportType.INSERT).ToList().Count();
-            AddImportStatus(this.DataStatus.DataProcessedCount, 100, "Processing support information", Import.DataStatus.COMPLETED);
+                        this.Logs.Where(x => x.Type == ErrorType.NOERROR && x.ImportingType == ComponentDataLog.ImportType.UPDATE && x.IsExist == true).ToList();
+                        updateindex = updatelog.Select(log => log.Index).ToList();
+                        // update behavior
 
+                        updateData = ValidDataSource.Select("Index In (" + string.Join(",", updateindex.ToArray()) + ")").CopyToDataTable();
+
+                        if (updateData.Rows.Count > 0)
+                        {
+                            var dm = new DataManager();
+                            List<string> cols = new List<string>();
+                                 DataTable dt = updateData.Copy();
+                            // replace filefield name to component attribute name
+                            foreach (ImportFieldMap ifm in ImportFields)
+                            {
+                                var att = this.Component.Attributes.Where(x => x.ID == ifm.DataField).FirstOrDefault();
+                                if (att != null)
+                                {
+                                    if (ifm.FileFields != null)
+                                    {
+                                        if (updateData.Columns.Contains(ifm.FileFields))
+                                        {
+
+                                            updateData.Columns[ifm.FileFields].ColumnName = att.Name;
+                                        }
+                                    }
+                                }
+                            }
+
+                             foreach (CompExtention.Attribute key in this.Component.Keys)
+                        {
+                            if (key.Name.ToLower() != "clientid" && key.ComponentLookup == "")
+                            {
+                                dt.Columns.Add(new DataColumn(key.Name, typeof(int)));
+                                int i = 0;
+                                foreach (ComponentDataLog log in updatelog)
+                                {
+                                    dt.Rows[i][key.Name] = log.ExistKey;
+                                    i = i + 1;
+                                }
+                            }
+                        }
+
+                            //foreach (CompExtention.Attribute key in this.Component.Keys)
+                            //{
+                            //    if (key.Name.ToLower() != "clientid" && key.ComponentLookup == "")
+                            //    {
+                            //        if (!updateData.Columns.Contains(key.Name))
+                            //        {
+                            //            updateData.Columns["ExistKey"].ColumnName = key.Name;
+                            //        }
+                            //    }
+                            //}
+                       
+                            // find key fields and component fields other than any field exist need to remove it
+                            cols = new List<string>();
+                            foreach (DataColumn dc in dt.Columns)
+                            {
+                                bool isKeyCol = false;
+                                foreach (ComponentData c in this.ParentComponentData)
+                                {
+                                    var a = c.Component.Keys.Where(x => x.Name == dc.ColumnName).FirstOrDefault();
+                                    if (a != null)
+                                    {
+                                        isKeyCol = true;
+                                    }
+                                }
+                                foreach (CompExtention.Attribute att in this.Component.Attributes)
+                                {
+                                    if (att.Name == dc.ColumnName)
+                                    {
+                                        isKeyCol = true;
+                                    }
+                                }
+                                if (isKeyCol == false)
+                                {
+                                    cols.Add(dc.ColumnName);
+                                }
+                            }
+                            foreach (string s in cols)
+                            {
+                                dt.Columns.Remove(s);
+                            }/////
+
+                            dm = new DataManager();
+                            dm.tableName(this.Component.TableName);
+                            foreach (DataColumn dc in dt.Columns)
+                            {
+                                if (dc.DataType == typeof(DateTime))
+                                {
+                                    dm.UpdateInto(dc.ColumnName, FieldType._datetime, "");
+                                }
+                                else if (dc.DataType == typeof(Boolean))
+                                {
+                                    dm.UpdateInto(dc.ColumnName, FieldType._bool, "");
+                                }
+                                else
+                                {
+                                    dm.UpdateInto(dc.ColumnName, FieldType._string, "");
+                                }
+                            }
+                            foreach (CompExtention.Attribute key in this.Component.Keys)
+                            {
+                                dm.Where(this.Component.TableName, key.Name, "=", "");
+                            }
+                            if (dm.GetSchema().Wheres.Count == 0)
+                            {
+                                Errors.Add(new ImportError()
+                                {
+                                    Message = "No Key field set while update record",
+                                    Type = ErrorType.ERROR,
+                                });
+                            }
+                            else
+                            {
+                                if (dm.GetSchema().Wheres.Where(x => x.FieldName.ToLower() == "clientid").FirstOrDefault() == null)
+                                {
+                                    dm.Where(this.Component.TableName, "ClientID", "=", ClientID.ToString());
+                                }
+                            }
+                            TotalUpdated = 0;
+                            //}
+                            var path = logPath + "/" + Guid.NewGuid() + ".csv";
+                            File.WriteAllText(path, "");
+                            dt.ToCSV(path);
+                            dm.AfterProcessed += new EventHandler(AfterDataImported);
+                            var updateerr = dm.ExecuteNonQuery(path, conn);
+
+                            int indexx = 0;
+                            foreach (DataError derr in updateerr)
+                            {
+                                var drow = updateData.Rows[indexx];
+                                var a = Convert.ToInt32(drow["Index"]);
+                                var lg = Logs.Where(x => x.Index == a).FirstOrDefault();
+                                if (lg != null)
+                                {
+                                    lg.Message = derr.Message;
+                                    lg.ImportingType = ComponentDataLog.ImportType.UPDATE;
+                                    if (derr.Type == DataError.ErrorType.ERROR)
+                                    {
+                                        lg.Type = ErrorType.ERROR;
+                                    }
+                                    else if (derr.Type == DataError.ErrorType.NOERROR)
+                                    {
+                                        lg.Type = ErrorType.NOERROR;
+                                    }
+                                }
+                            }
+                            if (Validation != null)
+                            {
+                                Validation.AfterUpdate(this, dt);
+                            }
+                            dt.Dispose();
+                            TotalUpdated = Logs.Where(x => x.Type == ErrorType.NOERROR && x.ImportingType == ComponentDataLog.ImportType.UPDATE).ToList().Count;
+                            if (Validation != null)
+                            {
+                                try
+                                {
+                                    this.DataStatus.PercentageToComplete = this.DataStatus.PercentageToComplete + (this.DataStatus.PercentageToComplete * .12);
+                                    if (this.DataStatus.PercentageToComplete > 100)
+                                    {
+                                        this.DataStatus.PercentageToComplete = 90;
+                                    }
+                                    AddImportStatus(this.DataStatus.DataProcessedCount, this.DataStatus.PercentageToComplete, "Processing support information", Import.DataStatus.STARTED);
+                                    Validation.AfterUpdate(this, dt);
+                                }
+                                catch (Exception ex)
+                                {
+
+                                }
+                            }                          
+                           
+                        }
+                    }
+                }
+
+            }
+            AddImportStatus(this.DataStatus.DataProcessedCount, 100, "Import Completed", Import.DataStatus.COMPLETED);           
+            ErrorRecord = Logs.Where(x => x.Type == ErrorType.ERROR).ToList().Count;
         }
         /// <summary>
         /// 
@@ -917,13 +1706,31 @@ namespace TZ.Import
                         {
                             dm.InsertInto(dc.ColumnName, FieldType._datetime);
                         }
-                        else if (dc.DataType == typeof(Boolean))
+                        else if (dc.DataType == typeof(Boolean)) 
                         {
                             dm.InsertInto(dc.ColumnName, FieldType._bool);
                         }
                         else
                         {
-                            dm.InsertInto(dc.ColumnName, FieldType._string);
+                           var dd= this.Component.Attributes.Where(x => x.Name == dc.ColumnName).FirstOrDefault();
+                            if (dd != null)
+                            {
+                                if (dd.Type == AttributeType._bit)
+                                {
+                                    dm.InsertInto(dc.ColumnName, FieldType._bool);
+                                }
+                                else if (dd.Type == AttributeType._datetime || dd.Type == AttributeType._date)
+                                {
+                                    dm.InsertInto(dc.ColumnName, FieldType._datetime);
+                                }
+                                else {
+                                    dm.InsertInto(dc.ColumnName, FieldType._string);
+                                }
+                            }
+                            else {
+                                dm.InsertInto(dc.ColumnName, FieldType._string);
+                            }
+                           
                         }
                         columnNames.Add(dc.ColumnName);
                     }
@@ -1140,15 +1947,18 @@ namespace TZ.Import
                 ErrorRecord = Logs.Where(x => x.Type == ErrorType.ERROR).ToList().Count();
             }
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="sender"></param>
+        /// <param name="e"></param>
         private void AfterDataImported(object sender, EventArgs e) {
              LoadImportStatus(LogPath, Context);
             DataStatus.DataProcessedCount = DataStatus.DataProcessedCount + 1;
             double a = Convert.ToDouble((DataStatus.DataProcessedCount * 100) / this.ValidDataSource.Rows.Count);
               a = (.75 * a);
             AddImportStatus( DataStatus.DataProcessedCount, a, "Data Importing", Import.DataStatus.STARTED);
-        }
-        
+        }        
         /// <summary>
         /// 
         /// </summary>
@@ -1157,7 +1967,9 @@ namespace TZ.Import
         {
             return AutoIndex = AutoIndex + 1;
         }
-
+        /// <summary>
+        /// /
+        /// </summary>
         private void BuildLog()
         {
             int count = ValidDataSource.Rows.Count;
@@ -1166,6 +1978,9 @@ namespace TZ.Import
                 Logs.Add(new ComponentDataLog() { Index = i + 1 });
             }
         }
+        /// <summary>
+        /// 
+        /// </summary>
         private void SetIndexing()
         {
             if (!ValidDataSource.Columns.Contains("index"))
@@ -1298,11 +2113,13 @@ namespace TZ.Import
         /// <returns></returns>
         private Dictionary<string, string> GetMappingKeyWithValues(DataRow dr)
         {
+        
             var index = Convert.ToInt32(dr["index"]);
             Dictionary<string, string> sk = new Dictionary<string, string>();
             var items = ImportFields.Where(x => x.IsKey == true).ToList();
             foreach (ImportFieldMap ifm in items)
             {
+                string fieldVal = dr.IsNull(ifm.FileFields )? "" : dr[ifm.FileFields].ToString().Trim();
                 var att = this.Component.Attributes.Where(x => x.ID == ifm.DataField).FirstOrDefault();
                 if (att != null)
                 {
@@ -1311,18 +2128,28 @@ namespace TZ.Import
                         if (ifm.IsAutoCode == false)
                         {
 
-                            var val = GetComponentLookup(att.ComponentLookupDisplayField, dr[ifm.FileFields].ToString().Trim());
+                            var val = GetComponentLookup(att.ComponentLookupDisplayField, fieldVal.Trim());
                             sk.Add(att.Name, val);
                             if (this.Component.Type == ComponentType.attribute)
                             {
                                 if (val == "")
                                 {
                                     var log = this.Logs.Where(x => x.Index == index).FirstOrDefault();
-                                    log.Message = dr[ifm.FileFields].ToString() + " is invalid data in the column of " + ifm.FileFields;
+                                    log.Message = fieldVal + " is invalid data in the column of " + ifm.FileFields;
                                     log.Type = ErrorType.ERROR;
                                 }
                             }
                         }
+                    }
+                    else if (att.Type == AttributeType._lookup) {
+                        if (fieldVal != "")
+                        {
+                            var val = GetLookUp(fieldVal, att.LookupInstanceID);
+                            sk.Add(att.Name, Convert.ToString(val));
+                        }
+                        else {                            
+                            sk.Add(att.Name, "");
+                        }                    
                     }
                     else
                     {
@@ -1398,7 +2225,12 @@ namespace TZ.Import
                 return (new ImportError { Type = ErrorType.NOERROR });
             }
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="logPath"></param>
+        /// <param name="context"></param>
+        /// <returns></returns>
         public DataTable GetValidDataOnly(string logPath, string context  )
         {
             DataTableReader drr = SourceData.CreateDataReader();
@@ -1407,28 +2239,34 @@ namespace TZ.Import
             //add identity column
             clonedDT.Columns.Add(new DataColumn() { AutoIncrement = true, ColumnName = "Index", AutoIncrementStep = 1, DataType = typeof(Int32), AutoIncrementSeed = 1 });
             clonedDT.Columns.Add(new DataColumn() { ColumnName = "Message", DataType = typeof(string) });
-            clonedDT.Columns.Add(new DataColumn() { ColumnName = "Type", DataType = typeof(int) });
+            clonedDT.Columns.Add(new DataColumn() { ColumnName = "MType", DataType = typeof(int) });
             //load clone from reader, identity col will auto-populate with values
             clonedDT.Load(drr);
             LoadLog(logPath, context);
             var errLog = this.Logs.Where(x => x.Type == ErrorType.NOERROR).ToList();
             List<int> indexList = errLog.Select(log => log.Index).ToList();
-
-            clonedDT = clonedDT.Select("Index In (" + string.Join(",", indexList.ToArray()) + ")").CopyToDataTable();
-
-            foreach (DataRow dr in clonedDT.Rows)
-            {
-                int indx = Convert.ToInt32(dr["index"]);
-                var lg = this.Logs.Where(x => x.Index == indx).FirstOrDefault();
-                var status = lg.Type;
-                var itype = lg.ImportingType;                                      
+            if (indexList.Count > 0) {
+                clonedDT = clonedDT.Select("Index In (" + string.Join(",", indexList.ToArray()) + ")").CopyToDataTable();
+                foreach (DataRow dr in clonedDT.Rows)
+                {
+                    int indx = Convert.ToInt32(dr["index"]);
+                    var lg = this.Logs.Where(x => x.Index == indx).FirstOrDefault();
+                    var status = lg.Type;
+                    var itype = lg.ImportingType;
                     dr["Message"] = lg.Message;
-                    dr["Type"] = lg.Type;               
-            }
-            clonedDT.Columns.Remove("Index");
+                    dr["MType"] = lg.Type;
+                }
+                clonedDT.Columns.Remove("Index");
+            }           
             return clonedDT;
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="logPath"></param>
+        /// <param name="context"></param>
+        /// <param name="includeState"></param>
+        /// <returns></returns>
         public DataTable GetErrorList(string logPath, string context, bool includeState = false) {
             DataTableReader drr = SourceData.CreateDataReader();
             //clone original
@@ -1436,7 +2274,7 @@ namespace TZ.Import
             //add identity column
             clonedDT.Columns.Add(new DataColumn() { AutoIncrement = true, ColumnName = "Index", AutoIncrementStep = 1, DataType = typeof(Int32), AutoIncrementSeed = 1 });
             clonedDT.Columns.Add(new DataColumn() { ColumnName = "Message", DataType = typeof(string) });
-            clonedDT.Columns.Add(new DataColumn() { ColumnName = "Type", DataType = typeof(int) });
+            clonedDT.Columns.Add(new DataColumn() { ColumnName = "MType", DataType = typeof(int) });
             //load clone from reader, identity col will auto-populate with values
             clonedDT.Load(drr);
             LoadLog(logPath, context);
@@ -1474,15 +2312,15 @@ namespace TZ.Import
                         }
 
                         dr["Message"] = "Status : " + stext + " ; Message : " + lg.Message + "; Import Type:" + itypetext;
-                        dr["Type"] = lg.Type;
+                        dr["MType"] = lg.Type;
                     }
                     else
                     {
                         dr["Message"] = lg.Message;
-                        dr["Type"] = lg.Type;
-                    }
-                    clonedDT.Columns.Remove("Index");
+                        dr["MType"] = lg.Type;
+                    }                   
                 }
+                clonedDT.Columns.Remove("Index");
                 return clonedDT;
             }
             else {
@@ -1498,7 +2336,7 @@ namespace TZ.Import
             //add identity column
             clonedDT.Columns.Add(new DataColumn() { AutoIncrement = true, ColumnName = "Index", AutoIncrementStep = 1, DataType = typeof(Int32), AutoIncrementSeed = 1 });
             clonedDT.Columns.Add(new DataColumn() { ColumnName = "Message", DataType = typeof(string) });
-            clonedDT.Columns.Add(new DataColumn() { ColumnName = "Type", DataType = typeof(int) });
+            clonedDT.Columns.Add(new DataColumn() { ColumnName = "MType", DataType = typeof(int) });
             //load clone from reader, identity col will auto-populate with values
             clonedDT.Load(drr);
             LoadLog(logPath, context);
@@ -1506,6 +2344,9 @@ namespace TZ.Import
             {
                 int indx = Convert.ToInt32(dr["index"]);
                 var lg = this.Logs.Where(x => x.Index == indx).FirstOrDefault();
+                if (lg == null) {
+                    continue;
+                }
                 var status = lg.Type;
                 var itype = lg.ImportingType;
                 var stext = "";
@@ -1530,18 +2371,26 @@ namespace TZ.Import
                     }
 
                     dr["Message"] = "Status : " + stext + " ; Message : " + lg.Message + "; Import Type:" + itypetext;
-                    dr["Type"] = lg.Type;
+                    dr["MType"] = lg.Type;
                 }
                 else
                 {
                     dr["Message"] = lg.Message;
-                    dr["Type"] = lg.Type;
+                    dr["MType"] = lg.Type;
                 }
             }
             ProcessedData = clonedDT;
             return clonedDT;
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="enableUpdate"></param>
+        /// <param name="conn"></param>
+        /// <param name="logPath"></param>
+        /// <param name="context"></param>
+        /// <param name="templateFields"></param>
+        /// <param name="attributes"></param>
         protected internal void ValidatePivotData(bool enableUpdate, string conn, string logPath, string context, List<TemplateField> templateFields, List<CompExtention.Attribute> attributes) {
             var PivotData = ReshapeSource(this.SourceData, templateFields, attributes, conn);
 
@@ -1609,7 +2458,41 @@ namespace TZ.Import
                     WriteLog(logPath, Newtonsoft.Json.JsonConvert.SerializeObject(this.Logs), context);
                 }
             }
-            else if (this.Component.Type == ComponentType.core || this.Component.Type == ComponentType.attribute)
+            else if (this.Component.Type == ComponentType.meta)
+            {
+                try
+                {
+                    BuildLog();
+                    SetIndexing();
+                    Errors.Add(IsComponentMappingFieldValid());
+                    Errors = Errors.Where(x => x.Type == ErrorType.ERROR).ToList();
+                    if (Errors.Where(x => x.Type == ErrorType.ERROR).FirstOrDefault() == null)
+                    {
+                        CreateAutoCodeField();
+                        foreach (DataRow dr in this.ValidDataSource.Rows)
+                        {
+                            try
+                            {
+                                SetKeyValueIfExist(dr, enableUpdate);
+                                ValidateCoreByRow(enableUpdate, dr);
+                            }
+                            catch (Exception ex)
+                            {
+                                var log = Logs.Where(x => x.Index == Convert.ToInt32(dr["Index"])).FirstOrDefault();
+                                log.Message = ex.Message;
+                                log.Type = ErrorType.ERROR;
+                            }
+                            WriteLog(logPath, Newtonsoft.Json.JsonConvert.SerializeObject(this.Logs), context);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Errors.Add(new ImportError() { Message = ex.Message, Type = ErrorType.ERROR });
+                }
+            }
+            else if (this.Component.Type == ComponentType.core ||
+                this.Component.Type == ComponentType.attribute)
             {
                 try
                 {
@@ -1653,25 +2536,27 @@ namespace TZ.Import
                 }
                 // }             
             }
-            else if (this.Component.Type == ComponentType.pseudocore) {
+            else if (this.Component.Type == ComponentType.pseudocore)
+            {
                 BuildLog();
                 // Set Unique indexing in the Source to be validated
-                SetIndexing();               
+                SetIndexing();
                 Errors = Errors.Where(x => x.Type == ErrorType.ERROR).ToList();
                 if (Errors.Where(x => x.Type == ErrorType.ERROR).FirstOrDefault() == null)
                 {
-                    if (IsDuplidateInSource() == false) {
+                    if (IsDuplidateInSource() == false)
+                    {
                         foreach (DataRow dr in this.ValidDataSource.Rows)
                         {
                             try
-                            {                                
-                                if (IsKeyValid(GetMappingKeyWithValues(dr)) !="-1") {
-                                    var index = Convert.ToInt32(dr["index"]);
-                                    var log = Logs.Where(x => x.Index == index).FirstOrDefault();
+                            {
+                                if (IsKeyValid(GetMappingKeyWithValues(dr)) != "-1")
+                                {
+                                    var log = Logs.Where(x => x.Index == Convert.ToInt32(dr["Index"])).FirstOrDefault();
                                     log.Message = "This record aleady exist";
                                     log.Type = ErrorType.ERROR;
                                     continue;
-                                }                              
+                                }
                                 ValidatePseudoCoreByRow(enableUpdate, dr);
                             }
                             catch (Exception ex)
@@ -1681,12 +2566,42 @@ namespace TZ.Import
                                 log.Type = ErrorType.ERROR;
                             }
                         }
-                    }                      
-                      
+                    }
+
                     WriteLog(logPath, Newtonsoft.Json.JsonConvert.SerializeObject(this.Logs), context);
                 }
             }
+            else if (this.Component.Type == ComponentType.transaction)
+            {
+                BuildLog();
+                SetIndexing();
+                Errors.Add(IsLinkMappingFieldValid());
+                Errors = Errors.Where(x => x.Type == ErrorType.ERROR).ToList();
+                if (Errors.Where(x => x.Type == ErrorType.ERROR).FirstOrDefault() == null)
+                {
+                    foreach (DataRow dr in this.ValidDataSource.Rows)
+                    {
+                        try
+                        {
+                            ValidateTransactionByRow(enableUpdate, dr);
+                        }
+                        catch (Exception ex)
+                        {
+                            var log = Logs.Where(x => x.Index == Convert.ToInt32(dr["Index"])).FirstOrDefault();
+                            log.Message = ex.Message;
+                            log.Type = ErrorType.ERROR;
+                        }
+                    }
+                    WriteLog(logPath, Newtonsoft.Json.JsonConvert.SerializeObject(this.Logs), context);
+
+                }
+            }
         }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="compID"></param>
+        /// <returns></returns>
         private string GetParentKey(string compID) {
             
          var a =   this.ParentComponentData.Where(x => x.Component.ID == compID).FirstOrDefault();
@@ -1922,7 +2837,11 @@ namespace TZ.Import
         {
             SetKeyByComponent(dr, isPush);
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="enableUpdate"></param>
+        /// <param name="dr"></param>
         private void ValidatePseudoCoreByRow(bool enableUpdate, DataRow dr) {
             foreach (ImportFieldMap ifm in ImportFields)
             {
@@ -1931,6 +2850,60 @@ namespace TZ.Import
                     var att = this.Component.Attributes.Where(x => x.ID == ifm.DataField).FirstOrDefault();
                     ValidDataType(att, ifm, enableUpdate, dr);
                 //}
+            }
+            if (Validation != null)
+            {
+                var index = Convert.ToInt32(dr["index"]);
+                var log = Logs.Where(x => x.Index == index).FirstOrDefault();
+                var im = Validation.Validate(this, dr);
+                if (im.Type == ErrorType.ERROR)
+                {
+                    log.Message = im.Message;
+                    log.Type = 0;
+                }
+            }
+        }
+         /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="enableUpdate"></param>
+        /// <param name="dr"></param>
+        private void ValidateTransactionByRow(bool enableUpdate, DataRow dr)
+        {
+
+            SetLinkKeys(dr);
+            if (this.ParentComponentData.Count > 0)
+            {
+                int dataindex = Convert.ToInt32(dr["index"]);
+                var lg = Logs.Where(x => x.Index == dataindex).FirstOrDefault();
+                if (lg.ImportingType == ComponentDataLog.ImportType.UPDATE)
+                {
+                    SetKeyValueIfExist(dr, enableUpdate);
+                }
+            }
+            else { // if not parent relation with transaction component then it must act as acting core component
+                SetKeyValueIfExist(dr, enableUpdate);
+            }
+                      
+            foreach (ImportFieldMap ifm in ImportFields)
+            {
+                //if (ifm.IsKey != true)
+                //{
+                    var att = this.Component.Attributes.Where(x => x.ID == ifm.DataField).FirstOrDefault();
+                    ValidDataType(att, ifm, enableUpdate, dr);
+                //}
+                
+            }
+            if (Validation != null)
+            {
+                var index = Convert.ToInt32(dr["index"]);
+                var log = Logs.Where(x => x.Index == index).FirstOrDefault();
+                var im = Validation.Validate(this, dr);
+                if (im.Type == ErrorType.ERROR)
+                {
+                    log.Message = im.Message;
+                    log.Type = 0;
+                }
             }
         }
         /// <summary>
@@ -1948,6 +2921,18 @@ namespace TZ.Import
                     var att = this.Component.Attributes.Where(x => x.ID == ifm.DataField).FirstOrDefault();
                     ValidDataType(att, ifm, enableUpdate, dr);
                 }
+                
+            }
+            if (Validation != null)
+            {
+                var index = Convert.ToInt32(dr["index"]);
+                var log = Logs.Where(x => x.Index == index).FirstOrDefault();
+                var im = Validation.Validate(this, dr);
+                if (im.Type == ErrorType.ERROR)
+                {
+                    log.Message = im.Message;
+                    log.Type = 0;
+                }
             }
         }
         /// <summary>
@@ -1962,6 +2947,17 @@ namespace TZ.Import
             {
                 var att = this.Component.Attributes.Where(x => x.ID == ifm.DataField).FirstOrDefault();
                 ValidDataType(att, ifm, enableUpdate, dr);
+            }
+            if (Validation != null)
+            {
+                var index = Convert.ToInt32(dr["index"]);
+                var log = Logs.Where(x => x.Index == index).FirstOrDefault();
+                var im = Validation.Validate(this, dr);
+                if (im.Type == ErrorType.ERROR)
+                {
+                    log.Message = im.Message;
+                    log.Type = 0;
+                }
             }
         }
         /// <summary>
@@ -2006,7 +3002,7 @@ namespace TZ.Import
                 }
                 if (att.Type == AttributeType._number)
                 {
-                    if (att.IsRequired == true)
+                    if (att.IsRequired == true || ifm.IsRequired == true)
                     {
                         if (IsEmpty(dr[ifm.FileFields]))
                         {
@@ -2035,7 +3031,7 @@ namespace TZ.Import
                 }
                 else if (att.Type == AttributeType._lookup)
                 {
-                    if (att.IsRequired == true)
+                    if (att.IsRequired == true || ifm.IsRequired == true)
                     {
                         if (IsEmpty(dr[ifm.FileFields]))
                         {
@@ -2103,7 +3099,7 @@ namespace TZ.Import
                 }
                 else if (att.Type == AttributeType._decimal || att.Type == AttributeType._currency)
                 {
-                    if (att.IsRequired == true)
+                    if (att.IsRequired == true || ifm.IsRequired == true)
                     {
                         if (IsEmpty(dr[ifm.FileFields]))
                         {
@@ -2139,23 +3135,31 @@ namespace TZ.Import
 
                     if ((!IsEmpty(dr[ifm.FileFields])))
                     {
-                        var s = GetComponentLookup(att.ComponentLookupDisplayField, dr[ifm.FileFields].ToString());
-                        if (s == "")
+                        if (dr[ifm.FileFields].ToString().ToLower() == "all")
                         {
-                            if (att.IsRequired == true)
+                            dr[ifm.FileFields] = "-1";
+                        }
+                        else {
+                            var s = GetComponentLookup(att.ComponentLookupDisplayField, dr[ifm.FileFields].ToString());
+                            if (s == "")
                             {
-                                log.Message = ifm.FileFields + " is required field. " + dr[ifm.FileFields].ToString() + " is not exist.";
-                                log.Type = 0;                                
-                            }                          
+                                if (att.IsRequired == true || ifm.IsRequired == true)
+                                {
+                                    log.Message = ifm.FileFields + " is required field. " + dr[ifm.FileFields].ToString() + " is not exist.";
+                                    log.Type = 0;
+                                }
+                                dr[ifm.FileFields] = DBNull.Value;
+                            }
+                            else
+                            {
+                                dr[ifm.FileFields] = s;
+                            }
                         }
-                        else
-                        {
-                            dr[ifm.FileFields] = s;
-                        }
+                        
                     }
                     else
                     {
-                        if (att.IsRequired == true)
+                        if (att.IsRequired == true || ifm.IsRequired == true)
                         {
                             log.Message = ifm.FileFields + " is required field.";
                             log.Type = 0;
@@ -2169,7 +3173,7 @@ namespace TZ.Import
                 }
                 else if (att.Type == AttributeType._date || att.Type == AttributeType._datetime || att.Type == AttributeType._time)
                 {
-                    if (att.IsRequired == true)
+                    if (att.IsRequired == true || ifm.IsRequired ==true)
                     {
                         if (IsEmpty(dr[ifm.FileFields]))
                         {
@@ -2179,22 +3183,25 @@ namespace TZ.Import
                             //dr["message"] = ifm.FileFields + " is required field.";
                             //dr["type"] = 0;
                         }
-                        else if (!IsDate(dr[ifm.FileFields].ToString()))
-                        {
-                            log.Message = ifm.FileFields + " invalid date.";
-                            log.Type = 0;
+                        //else if (!IsDate(dr[ifm.FileFields].ToString()))
+                        //{
+                        //    log.Message = ifm.FileFields + " invalid date.";
+                        //    log.Type = 0;
 
-                            //dr["state"] = "error";
-                            //dr["message"] = ifm.FileFields + " invalid date";
-                            //dr["type"] = 0;
-                        }
-                        else {
+                        //    //dr["state"] = "error";
+                        //    //dr["message"] = ifm.FileFields + " invalid date";
+                        //    //dr["type"] = 0;
+                        //}
+                        else
+                        {
                             try
                             {
-                                dr[ifm.FileFields] = DateTime.Parse(dr[ifm.FileFields].ToString()).ToString("yyyy-MM-dd HH:mm:ss");
+                                dr[ifm.FileFields] = dateparse(dr[ifm.FileFields].ToString(), ifm.DateFormat).ToString("yyyy-MM-dd HH:mm:ss");
                             }
-                            catch (Exception e) { 
-                            
+                            catch (Exception e)
+                            {
+                                log.Message = ifm.FileFields + " invalid date.";
+                                log.Type = 0;
                             }
                         }
                     }
@@ -2202,74 +3209,223 @@ namespace TZ.Import
                     {
                         if (!IsEmpty(dr[ifm.FileFields]))
                         {
-                            if (!IsDate(dr[ifm.FileFields].ToString()))
-                            {
-                                //dr["state"] = "error";
-                                //dr["message"] = ifm.FileFields + " invalid date";
-                                //dr["type"] = 0;
-                                log.Message = ifm.FileFields + " invalid date.";
-                                log.Type = 0;
-                            }
-                            else {
+                            //if (!IsDate(dr[ifm.FileFields].ToString()))
+                            //{
+                            //    //dr["state"] = "error";
+                            //    //dr["message"] = ifm.FileFields + " invalid date";
+                            //    //dr["type"] = 0;
+                            //    log.Message = ifm.FileFields + " invalid date.";
+                            //    log.Type = 0;
+                            //}
+                            //else
+                            //{
                                 try
                                 {
-                                    dr[ifm.FileFields] = DateTime.Parse(dr[ifm.FileFields].ToString()).ToString("yyyy-MM-dd HH:mm:ss");
+                                    dr[ifm.FileFields] = dateparse(dr[ifm.FileFields].ToString(),ifm.DateFormat).ToString("yyyy-MM-dd HH:mm:ss");
                                 }
                                 catch (Exception e)
                                 {
+                                    log.Message = ifm.FileFields + " invalid date.";
+                                    log.Type = 0;
 
                                 }
-                            }
+                            //}
                         }
                     }
                 }
                 else if (att.Type == AttributeType._bit)
                 {
-                    if (att.IsRequired == true)
+                    if (att.IsRequired == true || ifm.IsRequired == true)
                     {
                         if (IsEmpty(dr[ifm.FileFields]))
                         {
                             log.Message = ifm.FileFields + " is required field.";
                             log.Type = 0;
-                            //dr["state"] = "error";
-                            //dr["message"] = ifm.FileFields + " is required field.";
-                            //dr["type"] = 0;
                         }
-                        if (!IsBoolean(dr[ifm.FileFields].ToString()))
+                        else if (!IsBoolean(dr[ifm.FileFields].ToString()))
                         {
                             log.Message = ifm.FileFields + " is required field. value must be 'True/False' .";
                             log.Type = 0;
-
-                            //dr["state"] = "error";
-                            //dr["message"] = ifm.FileFields + " is required field. value must be 'True/False' ";
-                            //dr["type"] = 0;
+                        }
+                        else {
+                            if (dr[ifm.FileFields].ToString() == "true") {
+                                dr[ifm.FileFields] = "True";
+                            }else if (dr[ifm.FileFields].ToString() == "false")
+                            {
+                                dr[ifm.FileFields] = "False";
+                            }
                         }
                     }
                     else
                     {
                         if (!IsEmpty(dr[ifm.FileFields]))
                         {
-                            if (!IsBoolean(dr[ifm.DataField].ToString()))
+                            if (!IsBoolean(dr[ifm.FileFields].ToString()))
                             {
                                 log.Message = ifm.FileFields + " is required field. value must be 'True/False' .";
                                 log.Type = 0;
-                                //dr["state"] = "error";
-                                //dr["message"] = ifm.FileFields + " is required field. value must be 'True/False' ";
-                                //dr["type"] = 0;
+                            }
+                            else {
+                                if (dr[ifm.FileFields].ToString() == "true")
+                                {
+                                    dr[ifm.FileFields] = "True";
+                                }
+                                else if (dr[ifm.FileFields].ToString() == "false")
+                                {
+                                    dr[ifm.FileFields] = "False";
+                                }
                             }
                         }
                     }
                 }
-                if (Validation != null)
-                {
-                    var im = Validation.Validate(this, dr);
-                    if (im.Type == ErrorType.ERROR)
+                else if (att.Type == AttributeType._string) {
+                    if (att.IsRequired == true || ifm.IsRequired == true)
                     {
-                        log.Message = im.Message;
-                        log.Type = 0;
+                        if (IsEmpty(dr[ifm.FileFields]))
+                        {
+                            log.Message = ifm.FileFields + " is required field";
+                            log.Type = 0;
+                        }                         
+                    }
+                    else
+                    {
+                        //if ((!IsEmpty(dr[ifm.FileFields])))
+                        //{
+                        //    if (!IsNumeric(dr[ifm.FileFields].ToString()))
+                        //    {
+                        //        log.Message = ifm.FileFields + " invalid data";
+                        //        log.Type = 0;
+                        //    }
+                        //}
                     }
                 }
+               
             }
+        }
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="date"></param>
+        /// <param name="format"></param>
+        /// <returns></returns>
+        private DateTime  dateparse(string date, int format) {
+            //[ {key:"1", value :"MM-DD-YYYY"},
+            //        {key:"2",value :"DD-MM-YYYY"},         
+            //        { key: "3", value: "YYYY-MM-DD" },
+            //        { key: "4", value: "YYYY-DD-MM" },
+            //        { key: "5", value: "MM/DD/YYYY" },
+            //        { key: "6", value: "DD/MM/YYYY" },            
+            //        { key: "7", value: "YYYY/MM/DD" },
+            //        { key: "8", value: "YYYY/DD/MM" }]
+            try
+            {
+                int mm=0;
+            int dd=0;
+            int yy=0;
+            string[] datepart;
+            string[] datetimepart;
+            datetimepart = date.Split(' ');
+            string d = datetimepart[0];
+            if (format == 1)
+            {
+                datepart = d.Split('-'); //"MM-DD-YYYY"
+                if (datepart.Length == 3)
+                {
+                    mm = Convert.ToInt32 ( datepart[0]);
+                    dd = Convert.ToInt32(datepart[1]);
+                    yy = Convert.ToInt32(datepart[2]);
+                }
+
+            }
+            else if (format == 2)
+            {
+                datepart = d.Split('-'); //"DD-MM-YYYY"
+                if (datepart.Length == 3)
+                {
+                    mm = Convert.ToInt32(datepart[1]);
+                    dd = Convert.ToInt32(datepart[0]);
+                    yy = Convert.ToInt32(datepart[2]);
+                }
+            }
+            else if (format == 3) //"YYYY-MM-DD" 
+            {
+                datepart = d.Split('-');
+                if (datepart.Length == 3)
+                {
+                    mm = Convert.ToInt32(datepart[1]);
+                    dd = Convert.ToInt32(datepart[2]);
+                    yy = Convert.ToInt32(datepart[0]);
+                }
+
+            }
+            else if (format == 4) // "YYYY-DD-MM"
+            {
+                datepart = d.Split('-');
+                if (datepart.Length == 3)
+                {
+                    mm = Convert.ToInt32(datepart[2]);
+                    dd = Convert.ToInt32(datepart[1]);
+                    yy = Convert.ToInt32(datepart[0]);
+                }
+            }
+            else if (format == 5)  //"MM/DD/YYYY"
+            {
+                datepart = d.Split('/');
+                if (datepart.Length == 3)
+                {
+                    mm = Convert.ToInt32(datepart[0]);
+                    dd = Convert.ToInt32(datepart[1]);
+                    yy = Convert.ToInt32(datepart[2]);
+                }
+            }
+            else if (format == 6)   //"DD/MM/YYYY"
+            {
+                datepart = d.Split('/');
+                if (datepart.Length == 3)
+                {
+                    mm = Convert.ToInt32(datepart[1]);
+                    dd = Convert.ToInt32(datepart[0]);
+                    yy = Convert.ToInt32(datepart[2]);
+
+                }
+            }
+            else if (format == 7) //YYYY/MM/DD
+            {
+                datepart = d.Split('/');
+                if (datepart.Length == 3)
+                {
+                    mm = Convert.ToInt32(datepart[1]);
+                    dd = Convert.ToInt32(datepart[2]);
+                    yy = Convert.ToInt32(datepart[0]);
+                }
+            }
+            else if (format == 8) //"YYYY/DD/MM"
+            {
+                datepart = d.Split('/');
+                if (datepart.Length == 3)
+                {
+                    mm = Convert.ToInt32(datepart[2]);
+                    dd = Convert.ToInt32(datepart[1]);
+                    yy = Convert.ToInt32(datepart[0]);
+                }
+            }
+            else
+            {
+                datepart = d.Split('-');
+                if (datepart.Length == 3)
+                {
+                    mm = Convert.ToInt32(datepart[2]);
+                    dd = Convert.ToInt32(datepart[1]);
+                    yy = Convert.ToInt32(datepart[0]);
+                }
+            }
+           
+                return new DateTime(yy, mm, dd);
+            }
+            catch (Exception ex) {
+                throw ex;
+            }          
+           
         }
         /// <summary>
         /// 
@@ -2419,7 +3575,12 @@ namespace TZ.Import
             return lookup;
 
         }
-
+        /// <summary>
+        /// 
+        /// </summary>
+        /// <param name="Id"></param>
+        /// <param name="conn"></param>
+        /// <returns></returns>
         private DataTable GetLookup(string Id,string conn) {
             string strjson = File.ReadAllText(lookupPath);
             DataTable dt = Newtonsoft.Json.JsonConvert.DeserializeObject<DataTable>(strjson);
@@ -2519,20 +3680,56 @@ namespace TZ.Import
         protected string IsKeyValid(Dictionary<string, string> keyValues)
         {
             List<DataRow> drs = TargetData.AsEnumerable().ToList();
+            bool isConditionAdded = false;
             foreach (KeyValuePair<string, string> i in keyValues)
             {
                 if (i.Value != "")
                 {
-                    drs = drs.AsEnumerable().Where(x => x[i.Key].ToString() == i.Value.Trim()).ToList();
+                    if (this.Component.Attributes.Where(x => x.Name.ToLower() == i.Key.ToLower()).FirstOrDefault() != null)
+                    {
+                        var ff = this.Component.Attributes.Where(x => x.Name.ToLower() == i.Key.ToLower()).FirstOrDefault();
+                        if (ff.Type == AttributeType._date || ff.Type == AttributeType._datetime)
+                        {
+                            var ddfield = this.ImportFields.Where(x => x.DataField.ToLower() == ff.ID).FirstOrDefault();
+                            
+                            drs = drs.AsEnumerable().Where(x => Convert.ToDateTime( x[i.Key]) == dateparse(i.Value, ddfield.DateFormat)).ToList();
+                        }
+                        else {
+                            drs = drs.AsEnumerable().Where(x => x[i.Key].ToString() == i.Value.Trim()).ToList();
+                        }
+                    }
+                    else {
+                        drs = drs.AsEnumerable().Where(x => x[i.Key].ToString() == i.Value.Trim()).ToList();
+                    }
+                    isConditionAdded = true;
+                    
                 }
+            }
+            if (isConditionAdded == false) {
+                return "-1";
             }
             if (drs.Count > 0)
             {
-                var key = this.Component.Keys.Where(x => x.Name.ToLower() != "clientid" && x.ComponentLookup == "").FirstOrDefault();
-                if (key != null)
+                if (Component.Type == ComponentType.pseudocore)
                 {
-                    return drs[0][key.Name].ToString();
+                    return "0";
                 }
+                else if (Component.Type == ComponentType.meta) {
+                    var key = this.Component.Keys.Where(x => x.Name.ToLower() != "clientid").FirstOrDefault();
+                    if (key != null)
+                    {
+                        return drs[0][key.Name].ToString();
+                    }
+                }
+                else
+                {
+                    var key = this.Component.Keys.Where(x => x.Name.ToLower() != "clientid" && x.ComponentLookup == "").FirstOrDefault();
+                    if (key != null)
+                    {
+                        return drs[0][key.Name].ToString();
+                    }
+                }
+             
                 return "-1";
             }
             else
@@ -2597,7 +3794,10 @@ namespace TZ.Import
                 }
             }
             dm.SelectFields(fields.ToArray(), Component.TableName).From(Component.TableName);
-            dm.Where(Component.TableName, "clientid", "=", this.ClientID.ToString());
+            if (Global.CheckFieldExist(Component.TableName, "clientid", conn))
+            {
+                dm.Where(Component.TableName, "clientid", "=", this.ClientID.ToString());
+            }
             TargetData = dm.GetData(conn);
         }
         /// <summary>
@@ -2651,9 +3851,12 @@ namespace TZ.Import
                         {
                             fields.Add(lkdf.Name);
                         }
-                        DataManager dm = new DataManager();
-                        dm.SelectFields(fields.ToArray(), comp.TableName).From(comp.TableName);
-                        dm.Where(comp.TableName, "clientid", "=", this.ClientID.ToString());
+                         DataManager dm = new DataManager();
+                         dm.SelectFields(fields.ToArray(), comp.TableName).From(comp.TableName);
+                        if (Global.CheckFieldExist(comp.TableName, "clientid", conn))
+                        {
+                            dm.Where(comp.TableName, "clientid", "=", this.ClientID.ToString());
+                        }
                         ComponentLookups.Add(new LookupComponentField() { Attribute = lkdf, LookupComponent = (Component)comp, LookupData = dm.GetData(conn) });
                     }
                 }
@@ -2812,8 +4015,6 @@ namespace TZ.Import
             }
         }
     }
-
-
     public class ComponentDataLog
     {
         public enum ImportType

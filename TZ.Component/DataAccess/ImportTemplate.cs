@@ -53,6 +53,18 @@ namespace TZ.CompExtention.DataAccess
                 return false;
 
         }
+
+        protected internal bool RemoveTemplateByName(string name, int cid) {
+            DBComparison client = DBComparison.Equal(DBField.Field(TalentozTemplate.ClientID.Name), DBConst.Int32(cid));
+            DBComparison dbTemplate = DBComparison.Equal(DBField.Field(TalentozTemplate.Name.Name), DBConst.String(name));
+            DBQuery delete = DBQuery.DeleteFrom(TalentozTemplate.Table).WhereAll(dbTemplate, client);
+            if (db.ExecuteNonQuery(delete) > 0)
+            {
+                return true;
+            }
+            else
+                return false;
+        }
         protected internal bool Update(int cid,string template, string name, string category, string code, string viewid, int type, string attributes, string pivotColumn)
         {
             DBComparison dbTemplate = DBComparison.Equal(DBField.Field(TalentozTemplate.TemplateID.Name), DBConst.String(template));

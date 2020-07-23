@@ -97,18 +97,18 @@ namespace TZ.Data
             {
                 if (tf.Type == FieldType._string)
                 {
-                    create.Add(tf.Field, DbType.String, 555);
+                    create.Add(tf.Field, DbType.String, 555,DBColumnFlags.Nullable);
                 }
                 else if (tf.Type == FieldType._datetime)
                 {
-                    create.Add(tf.Field, DbType.DateTime);
+                    create.Add(tf.Field, DbType.DateTime, DBColumnFlags.Nullable);
                 }
                 else if (tf.Type == FieldType._number)
                 {
-                    create.Add(tf.Field, DbType.String);
+                    create.Add(tf.Field, DbType.String, 555, DBColumnFlags.Nullable);
                 }
                 else if (tf.Type == FieldType._bool) {
-                    create.Add(tf.Field, DbType.Boolean);
+                    create.Add(tf.Field, DbType.Boolean, DBColumnFlags.Nullable);
                 }            
                
             }
@@ -185,6 +185,23 @@ namespace TZ.Data
                         if (item[data.GetOffset(tf.Field)] != "")
                         {
                             return Convert.ToDateTime(item[data.GetOffset(tf.Field)]).ToString("yyyy-MM-dd HH:mm:ss");
+                        }
+                        else
+                        {
+                            return null;
+                        }
+                    }
+                    else if (tf.Type == FieldType._bool) {
+                        if (item[data.GetOffset(tf.Field)] != "")
+                        {
+                            if (item[data.GetOffset(tf.Field)].ToString().ToLower() == "true")
+                            {
+                                return 1;
+                            }
+                            else {
+                                return 0;
+                            }
+                           // return Convert.ToDateTime(item[data.GetOffset(tf.Field)]).ToString("yyyy-MM-dd HH:mm:ss");
                         }
                         else
                         {

@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Data;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading.Tasks;
 using Tech.Data;
@@ -37,27 +38,38 @@ namespace TZ.CompExtention
 
         public List<Attribute> GetTableFields(string tbName,int clientID) {
             Builder.Data.ComponentBuilder cb = new Builder.Data.ComponentBuilder(this.Connection);
+            
           Tech.Data.Schema.DBSchemaTable  tbl =  cb.GetTable(tbName);
             List<Attribute> atts = new List<Attribute>();
-            foreach (Tech.Data.Schema.DBSchemaTableColumn c in tbl.Columns) {
-                Attribute at = new Attribute();
-                at.Name = c.Name;
-                at.ClientID = clientID;
-                at.DisplayName = c.Name;
-                at.IsNullable = c.Nullable;
-                at.IsKey = c.PrimaryKey;
-                at.IsRequired = !c.Nullable;
-                at.IsUnique = c.PrimaryKey;
-                if (c.Size > 0) {
-                    at.Length = c.Size;
-                }             
-                at.Max = c.Size;
-                at.DefaultValue = c.DefaultValue;
-               
-                at.Type = Attribute.GetAttributeType(c.DbType);
-                atts.Add(at);
+            try {
+              
+                foreach (Tech.Data.Schema.DBSchemaTableColumn c in tbl.Columns)
+                {
+                    Attribute at = new Attribute();
+                    at.Name = c.Name;
+                    at.ClientID = clientID;
+                    at.DisplayName = c.Name;
+                    at.IsNullable = c.Nullable;
+                    at.IsKey = c.PrimaryKey;
+                    at.IsRequired = !c.Nullable;
+                    at.IsUnique = c.PrimaryKey;
+                    if (c.Size > 0)
+                    {
+                        at.Length = c.Size;
+                    }
+                    at.Max = c.Size;
+                    at.DefaultValue = c.DefaultValue;
+
+                    at.Type = Attribute.GetAttributeType(c.DbType);
+                    atts.Add(at);
+                }
             }
+            catch (Exception ex) {
+                 
+            }
+
             return atts;
+
         }
 
      

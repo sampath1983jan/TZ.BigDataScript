@@ -36,6 +36,7 @@
             this.label1 = new System.Windows.Forms.Label();
             this.txtConnection = new System.Windows.Forms.TextBox();
             this.label2 = new System.Windows.Forms.Label();
+            this.ckListClient = new System.Windows.Forms.CheckedListBox();
             this.SuspendLayout();
             // 
             // txtPath
@@ -43,7 +44,7 @@
             this.txtPath.BackColor = System.Drawing.SystemColors.ControlLightLight;
             this.txtPath.Enabled = false;
             this.txtPath.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtPath.Location = new System.Drawing.Point(151, 53);
+            this.txtPath.Location = new System.Drawing.Point(569, 61);
             this.txtPath.Name = "txtPath";
             this.txtPath.Size = new System.Drawing.Size(381, 26);
             this.txtPath.TabIndex = 13;
@@ -51,7 +52,7 @@
             // btnSaveAs
             // 
             this.btnSaveAs.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnSaveAs.Location = new System.Drawing.Point(538, 53);
+            this.btnSaveAs.Location = new System.Drawing.Point(956, 61);
             this.btnSaveAs.Name = "btnSaveAs";
             this.btnSaveAs.Size = new System.Drawing.Size(114, 28);
             this.btnSaveAs.TabIndex = 12;
@@ -62,7 +63,7 @@
             // btnRestore
             // 
             this.btnRestore.Font = new System.Drawing.Font("Microsoft Sans Serif", 18F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.btnRestore.Location = new System.Drawing.Point(151, 244);
+            this.btnRestore.Location = new System.Drawing.Point(569, 252);
             this.btnRestore.Name = "btnRestore";
             this.btnRestore.Size = new System.Drawing.Size(501, 50);
             this.btnRestore.TabIndex = 14;
@@ -74,7 +75,7 @@
             // 
             this.cmbClient.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
             this.cmbClient.FormattingEnabled = true;
-            this.cmbClient.Location = new System.Drawing.Point(368, 179);
+            this.cmbClient.Location = new System.Drawing.Point(786, 187);
             this.cmbClient.Name = "cmbClient";
             this.cmbClient.Size = new System.Drawing.Size(284, 28);
             this.cmbClient.TabIndex = 15;
@@ -83,7 +84,7 @@
             // 
             this.label1.AutoSize = true;
             this.label1.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label1.Location = new System.Drawing.Point(147, 182);
+            this.label1.Location = new System.Drawing.Point(565, 190);
             this.label1.Name = "label1";
             this.label1.Size = new System.Drawing.Size(191, 20);
             this.label1.TabIndex = 16;
@@ -93,7 +94,7 @@
             // 
             this.txtConnection.BackColor = System.Drawing.SystemColors.ControlLightLight;
             this.txtConnection.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.txtConnection.Location = new System.Drawing.Point(151, 133);
+            this.txtConnection.Location = new System.Drawing.Point(569, 141);
             this.txtConnection.Name = "txtConnection";
             this.txtConnection.Size = new System.Drawing.Size(501, 26);
             this.txtConnection.TabIndex = 17;
@@ -104,18 +105,27 @@
             // 
             this.label2.AutoSize = true;
             this.label2.Font = new System.Drawing.Font("Microsoft Sans Serif", 10F, System.Drawing.FontStyle.Regular, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.label2.Location = new System.Drawing.Point(147, 100);
+            this.label2.Location = new System.Drawing.Point(565, 108);
             this.label2.Name = "label2";
             this.label2.Size = new System.Drawing.Size(186, 20);
             this.label2.TabIndex = 18;
             this.label2.Text = "Enter Connection below";
+            // 
+            // ckListClient
+            // 
+            this.ckListClient.FormattingEnabled = true;
+            this.ckListClient.Location = new System.Drawing.Point(65, 33);
+            this.ckListClient.Name = "ckListClient";
+            this.ckListClient.Size = new System.Drawing.Size(378, 582);
+            this.ckListClient.TabIndex = 19;
             // 
             // ImportTemplateBackup
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.ControlLightLight;
-            this.ClientSize = new System.Drawing.Size(800, 331);
+            this.ClientSize = new System.Drawing.Size(1413, 635);
+            this.Controls.Add(this.ckListClient);
             this.Controls.Add(this.label2);
             this.Controls.Add(this.txtConnection);
             this.Controls.Add(this.label1);
@@ -143,5 +153,6 @@
         private System.Windows.Forms.Label label1;
         private System.Windows.Forms.TextBox txtConnection;
         private System.Windows.Forms.Label label2;
+        private System.Windows.Forms.CheckedListBox ckListClient;
     }
 }

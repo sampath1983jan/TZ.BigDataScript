@@ -201,7 +201,9 @@ namespace TZ.Data
             }         
         }
         public void Processed(object sender, EventArgs e) {
-            AfterProcessed(this, null);
+            if (AfterProcessed != null) {
+                AfterProcessed(this, null);
+            }          
         }
         public   List<DataError> ExecuteNonQuery(string scriptPath,string conn) {
             List<DataError> errs = new List<DataError>();

@@ -69,6 +69,7 @@ namespace TZ.CompExtention.Builder.Data
             DBSchemaProvider provider = db.GetSchemaProvider();
             return provider.GetTable(tbName);
         }
+        
         /// <summary>
         /// 
         /// </summary>
@@ -501,11 +502,12 @@ namespace TZ.CompExtention.Builder.Data
             DBQuery select = DBQuery.SelectAll().From(TalentozSchemaInfo.Table);
             return db.GetDatatable(select);
         }
-        protected internal bool ClearTemplate() {
-            DBQuery deleteView = DBQuery.DeleteFrom(TalentozTemplate.Table);
+        protected internal bool ClearTemplate(int clientID) {
+            DBComparison client = DBComparison.Equal(DBField.Field(TalentozSchemaClientInfo.ClientID.Name), DBConst.Int32(clientID));
+            DBQuery deleteView = DBQuery.DeleteFrom(TalentozTemplate.Table).WhereAll(client);
             db.ExecuteNonQuery(deleteView);
 
-            deleteView = DBQuery.DeleteFrom(TalentozImportLog.Table);
+            deleteView = DBQuery.DeleteFrom(TalentozImportLog.Table).WhereAll(client); ;
             db.ExecuteNonQuery(deleteView);
 
             return true;

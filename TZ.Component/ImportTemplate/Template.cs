@@ -94,6 +94,12 @@ namespace TZ.CompExtention.ImportTemplate
          return   itemp.Remove(this.TemplateID, ClientID);
         }
 
+        public static bool Remove(string name,string conn ,int clientid)
+        {
+            DataAccess.ImportTemplate itemp = new DataAccess.ImportTemplate(conn);
+            return itemp.RemoveTemplateByName(name, clientid);
+        }
+
         public void LoadView(int clientID) {
             ComponentViewManager cvm = new ComponentViewManager(this.ViewID, clientID, new TZ.CompExtention.DataAccess.ComponentViewHandler(this.Connection, clientID));
             cvm.LoadViewComponents();

@@ -10,6 +10,8 @@ using System.Data;
 using System.Data.Common;
 using MySql.Data.MySqlClient;
 using System.Reflection;
+using Tech.Data.Schema;
+using Newtonsoft.Json;
 
 namespace TZ.Import
 {
@@ -292,6 +294,22 @@ namespace TZ.Import
             }
             return iNext;
         }
+        public static bool CheckFieldExist(string tbName, string fieldName, string conn) {
+            DataBase db = new DataBase();
+            db.InitDbs(conn);
+
+            DBSchemaTable tables;
+            DBSchemaProvider provider = db.Database.GetSchemaProvider();
+            tables = provider.GetTable(tbName);
+            var fd =tables.Columns.Where(x => x.Name.ToLower() == fieldName.ToLower()).FirstOrDefault();
+            if (fd == null)
+            {
+                return false;
+            }
+            else
+                return true;
+        }
+        
         public static int GetNextID(string pEntityID,string conn,int LastIndex)
         {
             try
@@ -365,5 +383,14 @@ namespace TZ.Import
 
      
           
+    }
+
+    public static class SystemExtension
+    {
+        public static T Clone<T>(this T source)
+        {
+            var serialized = JsonConvert.SerializeObject(source);
+            return JsonConvert.DeserializeObject<T>(serialized);
+        }
     }
 }

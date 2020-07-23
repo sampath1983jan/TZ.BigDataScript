@@ -40,6 +40,8 @@ namespace TZ.CompExtention
                 c.Attributes = att;
             }
         }
+
+
         public ComponentViewManager(IComponentViewDataAccess v) {
             viewDataAccess = v;
             ViewID = "";

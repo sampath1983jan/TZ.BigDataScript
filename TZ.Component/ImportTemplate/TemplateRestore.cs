@@ -353,14 +353,14 @@ namespace TZ.CompExtention.ImportTemplate
             //}
             return true;
         }
-        public bool Restore(TemplateBackup tbk) {
+        public bool Restore(TemplateBackup tbk,int cid) {
             TZ.CompExtention.Builder.Data.ComponentBuilder db = new Builder.Data.ComponentBuilder(Connection);
             
             if (tbk.BackupType  == 1)
             {
                 try
                 {
-                    db.ClearTemplate();
+                    db.ClearTemplate(cid);
                     PushTemplate(tbk);
                 }
                 catch (Exception ex)

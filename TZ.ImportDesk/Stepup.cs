@@ -206,5 +206,21 @@ namespace TZ.ImportDesk
             }
           
         }
+
+        private void button1_Click_1(object sender, EventArgs e)
+        {
+
+            try
+            {
+                TZ.CompExtention.Shared.ConvertEmployeePositionPayAsia(Connection, ClientID);
+                MessageBox.Show("done");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error:" + ex.Message);
+
+            }
+          
+        }
     }
 }

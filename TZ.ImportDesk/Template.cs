@@ -20,7 +20,7 @@ namespace TZ.ImportDesk
             InitializeComponent();
         }
 
-        public Template(int clientID,string connection)
+        public Template(int clientID, string connection)
         {
             Connection = connection;
             ClientID = clientID;
@@ -38,11 +38,13 @@ namespace TZ.ImportDesk
         private PivotTemplate Pivot { get; set; }
         private void Template_Load(object sender, EventArgs e)
         {
-            if (Connection != "") {
+            if (Connection != "")
+            {
                 UpdateChanges(Connection, ClientID);
-            }          
+            }
         }
-        public void UpdateChanges(string connection, int clientid) {
+        public void UpdateChanges(string connection, int clientid)
+        {
             ClientID = clientid;
             Connection = connection;
             ViewAttributes = new List<CompExtention.Attribute>();
@@ -60,25 +62,27 @@ namespace TZ.ImportDesk
             bindView();
         }
 
-        private void BindAttributes(List<CompExtention.Attribute> va) {
+        private void BindAttributes(List<CompExtention.Attribute> va)
+        {
 
-            dgAttribute.Columns.Clear();     
-         
-            TextInfo textInfo = new CultureInfo("en-US", false).TextInfo;           
+            dgAttribute.Columns.Clear();
+
+            TextInfo textInfo = new CultureInfo("en-US", false).TextInfo;
 
             DataTable dt = new DataTable();
             dt.Columns.Add(new DataColumn("ID", typeof(string)));
             dt.Columns.Add(new DataColumn("ComponentID", typeof(string)));
             dt.Columns.Add(new DataColumn("Name", typeof(string)));
             dt.Columns.Add(new DataColumn("DisplayName", typeof(string)));
-           
-            foreach (CompExtention.Attribute s in va) {
+
+            foreach (CompExtention.Attribute s in va)
+            {
                 DataRow dr;
                 dr = dt.NewRow();
                 dr["ID"] = s.ID;
                 dr["ComponentID"] = s.ComponentID;
                 dr["Name"] = s.Name;
-                dr["DisplayName"] = s.DisplayName;               
+                dr["DisplayName"] = s.DisplayName;
                 dt.Rows.Add(dr);
             }
 
@@ -88,7 +92,7 @@ namespace TZ.ImportDesk
             col6.HeaderText = "Is Show";
             col6.Name = "show";
 
-            var col3 = new DataGridViewCheckBoxColumn() ;
+            var col3 = new DataGridViewCheckBoxColumn();
             col3.HeaderText = "Is Key Field";
             col3.Name = "key";
 
@@ -104,7 +108,7 @@ namespace TZ.ImportDesk
             col5.HeaderText = "Is Pivot";
             col5.Name = "pivot";
 
-            dgAttribute.Columns.AddRange(new DataGridViewColumn[] { col6,col3, col7, col4 , col5 });
+            dgAttribute.Columns.AddRange(new DataGridViewColumn[] { col6, col3, col7, col4, col5 });
             dgAttribute.Columns[0].ReadOnly = true;
             dgAttribute.Columns[1].ReadOnly = true;
             dgAttribute.Columns[2].ReadOnly = true;
@@ -122,9 +126,11 @@ namespace TZ.ImportDesk
             dgAttribute.Columns[8].Width = 60;
             SetValues();
         }
-       
-        private void SetTemplatefieldtoGrid(bool UpdateSource=false) {
-            if (SelectedTemplate != null) {
+
+        private void SetTemplatefieldtoGrid(bool UpdateSource = false)
+        {
+            if (SelectedTemplate != null)
+            {
                 foreach (DataGridViewRow drv in dgAttribute.Rows)
                 {
                     if (drv.Cells[3].Value != null)
@@ -196,7 +202,7 @@ namespace TZ.ImportDesk
 
                 }
             }
-         
+
         }
         private void SetValues()
         {
@@ -210,42 +216,46 @@ namespace TZ.ImportDesk
                 SetTemplatefieldtoGrid(true);
             }
         }
-        private void BindCompType() {
+        private void BindCompType()
+        {
             cmbType.ValueMember = "Key";
             cmbType.DisplayMember = "Value";
             cmbType.DataSource = type.ToArray();
         }
-        private void bindTemplate() {
+        private void bindTemplate()
+        {
             // CompExtention.ImportTemplate.Template imp = new CompExtention.ImportTemplate.Template(Connection);
-            Templates =     CompExtention.ImportTemplate.Template.GetTemplates(ClientID,Connection);
+            Templates = CompExtention.ImportTemplate.Template.GetTemplates(ClientID, Connection);
             lstTemplate.Items.Clear();
             foreach (CompExtention.ImportTemplate.Template s in Templates)
             {
-                var row = new string[] { s.Name, s.Code,  s.Category };
+                var row = new string[] { s.Name, s.Code, s.Category };
                 var li = new ListViewItem(row);
                 lstTemplate.Items.Add(li);
             }
         }
-       
-        private void bindView() {
-            CompExtention.ComponentViewManager cvm = new CompExtention.ComponentViewManager(new CompExtention.DataAccess.ComponentViewHandler(Connection,ClientID));
-             Views = cvm.GetViews();
+
+        private void bindView()
+        {
+            CompExtention.ComponentViewManager cvm = new CompExtention.ComponentViewManager(new CompExtention.DataAccess.ComponentViewHandler(Connection, ClientID));
+            Views = cvm.GetViews();
             cmbViewList.DisplayMember = "Name";
             cmbViewList.ValueMember = "ID";
             cmbViewList.DataSource = Views;
         }
-      
+
         private void lstTemplate_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (lstTemplate.SelectedItems.Count > 0) {
+            if (lstTemplate.SelectedItems.Count > 0)
+            {
                 CompExtention.ImportTemplate.Template imp = new CompExtention.ImportTemplate.Template(Connection, ClientID);
                 SelectedTemplate = Templates[lstTemplate.SelectedIndices[0]];
                 cmbViewList.SelectedItem = null;
                 cmbViewList.SelectedItem = Views.Where(x => x.ID == SelectedTemplate.ViewID).FirstOrDefault();
                 cmbType.Enabled = false;
                 cmbViewList.Enabled = false;
-                
-            }        
+
+            }
         }
         private void btnNew_Click(object sender, EventArgs e)
         {
@@ -277,17 +287,19 @@ namespace TZ.ImportDesk
                     }
                 }
 
-             
+
             }
-            else {
+            else
+            {
                 MessageBox.Show("Choose one template from below list and then delete");
             }
         }
         private void cmbViewList_SelectedIndexChanged(object sender, EventArgs e)
         {
-            if (cmbViewList.SelectedItem != null) {
+            if (cmbViewList.SelectedItem != null)
+            {
                 CompExtention.ComponentViewManager cvm = new CompExtention.ComponentViewManager(((CompExtention.ComponentView)cmbViewList.SelectedItem).ID,
-                    ClientID, new CompExtention.DataAccess.ComponentViewHandler(Connection,ClientID));
+                    ClientID, new CompExtention.DataAccess.ComponentViewHandler(Connection, ClientID));
                 SelectedView = (CompExtention.ComponentView)cvm.GetView();
                 List<string> comp = new List<string>();
                 comp.Add(SelectedView.CoreComponent);
@@ -301,25 +313,28 @@ namespace TZ.ImportDesk
                     {
                         comp.Add(vc.ChildComponentID);
                     }
-                }             
+                }
                 ViewAttributes = CompExtention.ComponentManager.GetComponentAttributes(string.Join(",", comp.ToArray()), ClientID, new CompExtention.DataAccess.ComponentDataHandler(Connection));
+                ViewAttributes= ViewAttributes.OrderBy(x=> x.DisplayName ).ToList ();
                 BindAttributes(ViewAttributes);
             }
-            
+
         }
         private void btnSaveTemplate_Click(object sender, EventArgs e)
         {
-            if (SelectedTemplate == null) {
+            if (SelectedTemplate == null)
+            {
                 SelectedTemplate = new CompExtention.ImportTemplate.Template();
             }
             CompExtention.ImportTemplate.Template tmp;
             if (SelectedTemplate.TemplateID != "")
             {
-                  tmp = new CompExtention.ImportTemplate.Template(SelectedTemplate.TemplateID, ClientID, Connection);
+                tmp = new CompExtention.ImportTemplate.Template(SelectedTemplate.TemplateID, ClientID, Connection);
             }
-            else {
-                  tmp = new CompExtention.ImportTemplate.Template(Connection, ClientID);
-            }            
+            else
+            {
+                tmp = new CompExtention.ImportTemplate.Template(Connection, ClientID);
+            }
             tmp.Name = txtTemplateName.Text;
             tmp.Code = txtCode.Text;
             tmp.Category = txtCategory.Text;
@@ -327,6 +342,7 @@ namespace TZ.ImportDesk
             if (((KeyValuePair<int, string>)cmbType.SelectedItem).Key == 0)
             {
                 tmp.Type = CompExtention.ImportTemplate.Template.TemplateType.DIRECT;
+                var Removed = new List<TemplateField>();
 
                 for (int x = 0; x < dgAttribute.Rows.Count; x++)
                 {
@@ -336,35 +352,53 @@ namespace TZ.ImportDesk
                         continue;
                     }
                     te.ID = dgAttribute.Rows[x].Cells[0].Value.ToString();
+
                     if (Convert.ToBoolean(dgAttribute.Rows[x].Cells["show"].Value) == true)
                     {
                         if (Convert.ToBoolean(dgAttribute.Rows[x].Cells["key"].Value))
                         {
                             te.IsKey = true;
                         }
+                        else
+                        {
+                            te.IsKey = false;
+                        }
                         if (Convert.ToBoolean(dgAttribute.Rows[x].Cells["default"].Value))
                         {
                             te.IsDefault = true;
+                        }
+                        else
+                        {
+                            te.IsDefault = false;
                         }
                         if (Convert.ToBoolean(dgAttribute.Rows[x].Cells["pivot"].Value))
                         {
                             te.IsPivot = true;
                         }
+                        else
+                        {
+                            te.IsPivot = false;
+                        }
                         if (Convert.ToBoolean(dgAttribute.Rows[x].Cells["required"].Value))
                         {
                             te.IsRequired = true;
                         }
+                        else
+                        {
+                            te.IsRequired = false;
+                        }
                         if (te.ID != "")
                         {
-                            var tmap = tmp.TemplateFields.Where(xx => xx.ID == te.ID).FirstOrDefault();                           
+                            var tmap = tmp.TemplateFields.Where(xx => xx.ID == te.ID).FirstOrDefault();
+
 
                             if (tmap != null)
                             {
                                 for (int i = 0; i < tmp.TemplateFields.Count; i++)
                                 {
                                     if (tmp.TemplateFields[i].ID == te.ID)
-                                    {
-                                        tmp.TemplateFields[i] = te;
+                                    {                                      
+                                            tmp.TemplateFields[i] = te;                                        
                                     }
                                 }
                             }
@@ -374,13 +408,49 @@ namespace TZ.ImportDesk
                             }
                         }
                     }
+                    else
+                    {
+                        var tmap = tmp.TemplateFields.Where(xx => xx.ID == te.ID).FirstOrDefault();
+
+
+                        if (tmap != null)
+                        {
+                            for (int i = 0; i < tmp.TemplateFields.Count; i++)
+                            {
+                                if (tmp.TemplateFields[i].ID == te.ID)
+                                {
+                                    if (te.IsKey == false  && te.IsDefault == false && te.IsRequired == false && te.IsPivot == false)
+                                    {
+                                        Removed.Add(te);
+                                    }
+                                    else
+                                    {
+                                        tmp.TemplateFields[i] = te;
+                                    }
+                                }
+                            }
+                        }
+                    }
                 }
+
+                var temp = new List<TemplateField>();
+                foreach (TemplateField f in tmp.TemplateFields)
+                {
+                    if (Removed.Where(x => x.ID == f.ID).FirstOrDefault() == null)
+                    {
+                        temp.Add(f);
+                    }
+                }
+                tmp.TemplateFields = temp;
             }
-            else {
+            else
+            {
                 tmp.Type = CompExtention.ImportTemplate.Template.TemplateType.PIVOT;
-                if (Pivot != null) { 
-              var  te = new CompExtention.ImportTemplate.TemplateField();
-                    foreach (string s in Pivot.Rows) {
+                if (Pivot != null)
+                {
+                    var te = new CompExtention.ImportTemplate.TemplateField();
+                    foreach (string s in Pivot.Rows)
+                    {
                         te = new CompExtention.ImportTemplate.TemplateField();
                         te.ID = s;
                         te.IsRow = true;
@@ -412,19 +482,21 @@ namespace TZ.ImportDesk
                     tmp.TemplateFields.Add(te);
                 }
             }
-           
+
             if (tmp.Save())
             {
                 MessageBox.Show("Templated Created Successfully");
                 bindTemplate();
                 btnNew_Click(null, null);
             }
-            else {
+            else
+            {
                 MessageBox.Show("Error while save template");
-            }           
+            }
         }
 
-        private void AddPivotDesigner() {
+        private void AddPivotDesigner()
+        {
             Pivot = new PivotTemplate(ViewAttributes);
             Pivot.Name = "PDesigner";
             Pivot.Location = new Point(6, 32);
@@ -445,14 +517,15 @@ namespace TZ.ImportDesk
                         Pivot.PivotColumn = tf.ID;
                     }
                 }
-            }       
+            }
             groupBox1.Controls.Add(Pivot);
         }
         private void cmbType_SelectedIndexChanged(object sender, EventArgs e)
         {
             if (((KeyValuePair<int, string>)cmbType.SelectedItem).Key == 0)
             {
-                if (groupBox1.Controls.Find("PDesigner",false).Count()>0) {
+                if (groupBox1.Controls.Find("PDesigner", false).Count() > 0)
+                {
                     groupBox1.Controls.Remove(groupBox1.Controls.Find("PDesigner", false).FirstOrDefault());
                 }
                 lblSearch.Visible = true;
@@ -480,8 +553,8 @@ namespace TZ.ImportDesk
 
         private void lkfull_LinkClicked(object sender, LinkLabelLinkClickedEventArgs e)
         {
-            Form childForm = new ViewFields(((CompExtention.ComponentView)cmbViewList.SelectedItem).ID,ClientID,Connection);
-          childForm.MdiParent = this.ParentForm ;
+            Form childForm = new ViewFields(((CompExtention.ComponentView)cmbViewList.SelectedItem).ID, ClientID, Connection);
+            childForm.MdiParent = this.ParentForm;
             childForm.Text = "Field List";
             childForm.Show();
         }
@@ -496,10 +569,11 @@ namespace TZ.ImportDesk
             if (txtSearch.Text != "")
             {
                 SetTemplatefieldtoGrid(true);
-                   var filterList = ViewAttributes.Where(x => x.Name.Contains(txtSearch.Text.ToLower()) || x.DisplayName.ToLower().Contains(txtSearch.Text.ToLower())).ToList();
+                var filterList = ViewAttributes.Where(x => x.Name.Contains(txtSearch.Text.ToLower()) || x.DisplayName.ToLower().Contains(txtSearch.Text.ToLower())).ToList();
                 BindAttributes(filterList);
             }
-            else {
+            else
+            {
                 BindAttributes(ViewAttributes);
             }
 

@@ -34,6 +34,7 @@
             this.button4 = new System.Windows.Forms.Button();
             this.btnClear = new System.Windows.Forms.Button();
             this.btnConvert = new System.Windows.Forms.Button();
+            this.button1 = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // lblTime
@@ -93,12 +94,25 @@
             this.btnConvert.UseVisualStyleBackColor = true;
             this.btnConvert.Click += new System.EventHandler(this.btnConvert_Click);
             // 
+            // button1
+            // 
+            this.button1.Font = new System.Drawing.Font("Microsoft Sans Serif", 16F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button1.Location = new System.Drawing.Point(184, 356);
+            this.button1.Name = "button1";
+            this.button1.Size = new System.Drawing.Size(394, 48);
+            this.button1.TabIndex = 12;
+            this.button1.Text = "Pay Asia Employee Position";
+            this.button1.TextAlign = System.Drawing.ContentAlignment.BottomCenter;
+            this.button1.UseVisualStyleBackColor = true;
+            this.button1.Click += new System.EventHandler(this.button1_Click_1);
+            // 
             // Stepup
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.ControlLightLight;
             this.ClientSize = new System.Drawing.Size(680, 460);
+            this.Controls.Add(this.button1);
             this.Controls.Add(this.btnConvert);
             this.Controls.Add(this.btnClear);
             this.Controls.Add(this.button4);
@@ -122,6 +136,7 @@
         private System.Windows.Forms.Button button4;
         private System.Windows.Forms.Button btnClear;
         private System.Windows.Forms.Button btnConvert;
+        private System.Windows.Forms.Button button1;
     }
 }
 

@@ -32,8 +32,14 @@ namespace TZ.ImportDesk
             InitializeComponent();
             GetClientList();
         }
+        private void bindClientInList() {
+            foreach (Client c in Clients) {
+                ckListClient.Items.Add(c.ClientName,true );
+            }      
+        }
         private void BindClient()
         {
+            bindClientInList();
             //cmbClient.ComboBox.Items.Clear();
             cmbClient.ValueMember = "ClientKey";
             cmbClient.DisplayMember = "ClientName";
@@ -79,23 +85,33 @@ namespace TZ.ImportDesk
                 if (txtPath.Text != "")
                 {
                     string s = File.ReadAllText(txtPath.Text);
-                    int cid = Convert.ToInt32(((Client)cmbClient.SelectedItem).ClientKey);
-                    TemplateBackup tb = Newtonsoft.Json.JsonConvert.DeserializeObject<TemplateBackup>(s);
-                    try
-                    {
-                        TemplateRestore tr = new TemplateRestore(cid, txtConnection.Text);
-                        tr.Restore(tb);
-                        MessageBox.Show("Restored");
+                    //int cid = Convert.ToInt32(((Client)cmbClient.SelectedItem).ClientKey);
+                    CheckedListBox.CheckedItemCollection ckitem =   ckListClient.CheckedItems;
+                    for (int i = 0; i < ckitem.Count; i++) {
+                       var cname = ckitem[i].ToString();
+                       var c= Clients.Where(x => x.ClientName == cname).FirstOrDefault();
+                        if (c != null) {
+                            int cid = Convert.ToInt32( c.ClientKey);
+                            TemplateBackup tb = Newtonsoft.Json.JsonConvert.DeserializeObject<TemplateBackup>(s);
+                            try
+                            {
+                                TemplateRestore tr = new TemplateRestore(cid, txtConnection.Text);
+                                tr.Restore(tb, cid);
+                                
+                            }
+                            catch (Exception ex)
+                            {
+                                MessageBox.Show("Error:" + ex.Message);
+                            }
+                        }
                     }
-                    catch (Exception ex) {
-                        MessageBox.Show("Error:" + ex.Message);
-                    }
-                   
+                    MessageBox.Show("Restored");
+
                 }
                 else {
                     MessageBox.Show("Please choose file to restore");
                 }
-            }
+            }else
             {
                 MessageBox.Show("Connection required field");
             }         

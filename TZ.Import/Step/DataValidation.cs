@@ -101,7 +101,9 @@ namespace TZ.Import.Step
             this.Context.LoadComponentView();
             string strjson = File.ReadAllText(logPath + "/" + this.Context.ID + ".json");
             dt = Newtonsoft.Json.JsonConvert.DeserializeObject<DataTable>(strjson);
-            var CoreComponent = Context.View.Components.Where(x => x.Type == ComponentType.core || x.Type == ComponentType.pseudocore  || x.Type == ComponentType.attribute || x.Type== ComponentType.link).ToList();
+            var CoreComponent = Context.View.Components.Where(x => x.Type == ComponentType.core ||
+            x.Type == ComponentType.pseudocore || x.Type == ComponentType.meta  || x.Type == ComponentType.attribute 
+            || x.Type== ComponentType.link ||   x.Type == ComponentType.transaction ).ToList();
             foreach (IComponent comp in CoreComponent)
             {
                 if (File.Exists(logPath + "/" + "cd" + "_" + comp.ID + "_" + this.Context.ID + ".json"))
@@ -118,6 +120,70 @@ namespace TZ.Import.Step
         private DataTable GetLookups()
         {
            return Shared.GetLookup(this.Context.ClientID, this.Context.Connection);
+        }
+        private ComponentData ValidateTransaction(string logPath, List<ComponentCustomAction> customAction) {
+            var CoreComponent = Context.View.Components.Where(x => x.Type == ComponentType.core).ToList();
+            var transactionComponent = Context.View.Components.Where(x => x.Type == ComponentType.transaction).FirstOrDefault();
+            if (transactionComponent != null)
+            {
+                ComponentData cd = new ComponentData(this.Context.ClientID, transactionComponent);
+                var caction = customAction.Where(x => x.ComponentName == transactionComponent.TableName).FirstOrDefault();
+                if (caction != null)
+                {
+                    cd.Validation = caction.CustomAction;
+                    cd.Validation.Init();
+                }
+                List<ImportFieldMap> compIFM = this.Context.ImportFields.Where(x => x.ComponentID == transactionComponent.ID).ToList();
+                cd.ImportFields = compIFM;
+
+                foreach (Component c in CoreComponent)
+                {
+                    var cRelation = Context.View.ComponentRelations.Where(x => (x.ComponentID == c.ID || x.ChildComponentID == c.ID)
+                    && (x.ComponentID == transactionComponent.ID || x.ChildComponentID == transactionComponent.ID)).ToList();
+                    if (cRelation.Count > 0)
+                    {
+                        var keyFields = this.Context.ImportFields.Where(x => x.ComponentID == c.ID && x.IsKey == true).ToList();
+                        cd.ImportFields.AddRange(keyFields);
+                        ComponentData coreCd = GetCache(logPath + "/" + "cd" + "_" + c.ID + "_" + this.Context.ID + ".json");
+                        coreCd.Component = c;
+                        cd.ParentComponentData.Add(coreCd);
+                    }
+
+
+                }
+                List<string> cols = new List<string>();
+                foreach (ImportFieldMap ifm in cd.ImportFields)
+                {
+                    ifm.FileFields = ifm.FileFields.Replace(" ", "_");
+                    cols.Add(ifm.FileFields);
+                }
+                foreach (DataColumn dc in dt.Columns)
+                {
+                    dc.ColumnName = dc.ColumnName.Replace(" ", "_");
+                }
+                cd.SourceData = dt.DefaultView.ToTable(true, cols.ToArray());
+                cd.LoadTargetData(this.Context.Connection);
+                cd.SetLookupList(dtLk);
+                cd.lookupPath = logPath + "/" + this.Context.ID + "_lookup.json";
+                cd.ValidateData(this.Context.EnableUpdateDuplicate, this.Context.Connection, logPath, this.Context.ID);
+                cd.ParentComponentData.Clear();
+                cd.GetProcessedData(logPath, this.Context.ID);
+                cd.Validation = null;
+                cd.Errors = cd.Errors.Where(x => x.Type == ErrorType.ERROR).ToList();
+
+                if (cd.Logs.Where(x => x.Type == ErrorType.ERROR).ToList().Count > 0 || cd.Errors.Where(x => x.Type == ErrorType.ERROR).ToList().Count > 0)
+                {
+                    cd.IsValid = false;
+                }
+                cd.lookupPath = "";
+                //cd.Logs.Clear();
+                CacheData(logPath + "/" + "cd" + "_" + transactionComponent.ID + "_" + this.Context.ID + ".json", Newtonsoft.Json.JsonConvert.SerializeObject(cd));
+                return (cd);
+            }
+            else {
+                return null;
+            }
+               
         }
         private ComponentData ValidateLink(string logPath, List<ComponentCustomAction> customAction) {
             var CoreComponent = Context.View.Components.Where(x => x.Type == ComponentType.core).ToList();
@@ -223,15 +289,26 @@ namespace TZ.Import.Step
             ComponentData cd = new ComponentData(this.Context.ClientID, (Component)comp);
             cd.ImportFields = this.Context.ImportFields.Where(x => x.ComponentID == comp.ID).ToList();
             cd.lookupPath = logPath + "/" + this.Context.ID + "_lookup.json";
-            cd.ExtractDataFromSource(dt);
+            if (comp.TableName.ToLower() == "position")
+            {
+                cd.ExtractDataFromSource(dt, true);
+            }
+            else
+            {
+                cd.ExtractDataFromSource(dt);
+            }           
             cd.LoadTargetData(this.Context.Connection);
             cd.SetLookupList(dtLk);         
             if (caction != null) {
                 cd.Validation = caction.CustomAction;
                 cd.Validation.Init();
-            }
+            }           
             cd.ValidateData(this.Context.EnableUpdateDuplicate, this.Context.Connection, logPath, this.Context.ID);
             cd.Errors = cd.Errors.Where(x => x.Type == ErrorType.ERROR).ToList();
+            if (cd.Logs.Where(x => x.Type == ErrorType.ERROR).ToList().Count > 0 || cd.Errors.Where(x => x.Type == ErrorType.ERROR).ToList().Count > 0)
+            {
+                cd.IsValid = false;
+            }
             cd.Validation = null;
             cd.lookupPath = "";
             cd.GetProcessedData(logPath, this.Context.ID);
@@ -280,6 +357,10 @@ namespace TZ.Import.Step
                     cd.LoadTargetData(this.Context.Connection);
                     cd.ValidateData(this.Context.EnableUpdateDuplicate, this.Context.Connection, logPath, this.Context.ID);
                     cd.Errors = cd.Errors.Where(x => x.Type == ErrorType.ERROR).ToList();
+                    if (cd.Logs.Where(x => x.Type == ErrorType.ERROR).ToList().Count > 0 || cd.Errors.Where(x => x.Type == ErrorType.ERROR).ToList().Count > 0)
+                    {
+                        cd.IsValid = false;
+                    }
                     cd.Validation = null;
                     cd.lookupPath = "";
                     cd.GetProcessedData(logPath, this.Context.ID);
@@ -309,29 +390,38 @@ namespace TZ.Import.Step
 
             string strjson = File.ReadAllText(logPath + "/" + this.Context.ID + ".json");
             dt = Newtonsoft.Json.JsonConvert.DeserializeObject<DataTable>(strjson);
-
-            var CoreComponent = Context.View.Components.Where(x => x.Type == ComponentType.core).ToList();
+            ///
+            var CoreComponent = Context.View.Components.Where(x => x.Type == ComponentType.core|| x.Type == ComponentType.meta).ToList();
          
-            foreach (Component comp in CoreComponent)
+                foreach (Component comp in CoreComponent)
             {
-                var custevent = customAction.Where(x => x.ComponentName == comp.TableName).FirstOrDefault();
-            
+                var custevent = customAction.Where(x => x.ComponentName == comp.TableName).FirstOrDefault();            
                 componentDataList.Add( ValidateCore(comp, logPath, custevent));              
             }
+            ///
             var pseudo = Validatepsedo(logPath, customAction);
             if (pseudo != null)
             {
                 componentDataList.Add(pseudo);
             }
+            ///
             var cdLink = ValidateLink(logPath, customAction);
             if (cdLink != null)
             {
                 componentDataList.Add(cdLink);
             }
+            //
             var cdAtt=  ValidateAttribute(logPath, customAction);
             if (cdAtt != null) {
                 componentDataList.Add(cdAtt);
             }
+
+            var vtrans = ValidateTransaction (logPath, customAction);
+            if (vtrans != null)
+            {
+                componentDataList.Add(vtrans);
+            }
+
             ImportContext context = Newtonsoft.Json.JsonConvert.DeserializeObject<ImportContext>(Newtonsoft.Json.JsonConvert.SerializeObject(this.Context));
             context.ComponentData = componentDataList;
             this.Context.View = null;
