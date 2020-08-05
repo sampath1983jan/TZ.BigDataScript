@@ -1317,6 +1317,20 @@ namespace TZ.CompExtention
                                 te.IsDefault = true;
                                 te.IsRequired = true;
                             }
+                            else if (att.Name.ToLower() == "StartDate".ToLower())
+                            {
+                                te.ID = att.ID;
+                                te.IsKey = true;
+                                te.IsDefault = true;
+                                te.IsRequired = true;
+                            }
+                            else if (att.Name.ToLower() == "Enddate".ToLower())
+                            {
+                                te.ID = att.ID;
+                                te.IsKey = true;
+                                te.IsDefault = true;
+                                te.IsRequired = true;
+                            }
                             else if (att.Name.ToLower() == "Description".ToLower()) {
                                 te.ID = att.ID;
                                 te.IsKey = false;
@@ -2071,6 +2085,16 @@ namespace TZ.CompExtention
                 }
                 tmp_er.Save();
             }
+
+        }
+
+        private static void ConvertToGoal(int ClientID, string connection) {
+            TZ.CompExtention.ComponentManager cms = new CompExtention.ComponentManager(ClientID, "sys_user", new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
+            cms.LoadAttributes();
+
+            //goal
+            //employeegoal
+
 
         }
 

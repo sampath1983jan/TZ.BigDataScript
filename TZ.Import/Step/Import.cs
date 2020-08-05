@@ -178,7 +178,12 @@ namespace TZ.Import.Step
                     }
                 }
                 trasaction.LoadTargetData(this.Context.Connection);
-                trasaction.PushTrasaction(this.Context.Connection, logPath, this.Context.ID);
+                try {
+                    trasaction.PushTrasaction(this.Context.Connection, logPath, this.Context.ID);
+                } catch (Exception ex) {
+                    trasaction.Errors.Add(new ImportError() { Message = ex.Message, Type = ErrorType.ERROR });
+                }
+           
                 trasaction.Validation = null;
                 trasaction.Errors = trasaction.Errors.Where(x => x.Type == ErrorType.ERROR).ToList();
 

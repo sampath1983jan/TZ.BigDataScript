@@ -1199,29 +1199,36 @@ namespace TZ.Import
                     }
                 }
             }
-
-            foreach (DataRow row in InsertData.Rows)
+            try
             {
-                if (this.ParentComponentData.Count > 0) {
-                    SetLinkKeys(row, true);
-                    int idx = Convert.ToInt32(row["index"]);
-                    var lg = this.Logs.Where(x => x.Index == idx).FirstOrDefault();
-                    if (lg.Type != ErrorType.ERROR)
+                foreach (DataRow row in InsertData.Rows)
+                {
+                    if (this.ParentComponentData.Count > 0)
                     {
-                        if (Validation != null)
+                        SetLinkKeys(row, true);
+                        int idx = Convert.ToInt32(row["index"]);
+                        var lg = this.Logs.Where(x => x.Index == idx).FirstOrDefault();
+                        if (lg.Type != ErrorType.ERROR)
                         {
-                            var err = Validation.ValidateLink(this, row);
-                            if (err.Type == ErrorType.ERROR)
+                            if (Validation != null)
                             {
-                                lg.Message = err.Message;
-                                lg.Type = ErrorType.ERROR;
-                                lg.ImportingType = ComponentDataLog.ImportType.INSERT;
-                                continue;
+                                var err = Validation.ValidateLink(this, row);
+                                if (err.Type == ErrorType.ERROR)
+                                {
+                                    lg.Message = err.Message;
+                                    lg.Type = ErrorType.ERROR;
+                                    lg.ImportingType = ComponentDataLog.ImportType.INSERT;
+                                    continue;
+                                }
                             }
                         }
                     }
-                }                
+                }
             }
+            catch (Exception ex) {
+                throw new Exception("Error:1" + ex.Message);
+            }
+           
             #endregion
 
 
@@ -2009,6 +2016,7 @@ namespace TZ.Import
             int indx = 0;
             foreach (ImportFieldMap ifm in ImportFields)
             {
+              var att=  this.Component.Attributes.Where(x => x.ID == ifm.DataField).FirstOrDefault();
                 if (ifm.IsKey == true)
                 {
                     Key.Add(ifm.FileFields);
@@ -2018,7 +2026,14 @@ namespace TZ.Import
                     }
                     else
                     {
-                        unstring = unstring + "+'#'+" + "IIF((ISNULL(" + ifm.FileFields + ",'0')='0'),'0'," + ifm.FileFields + ")";
+                        if (att.Type == AttributeType._date || att.Type == AttributeType._datetime)
+                        {
+                            unstring = unstring + "+'#'+" + "IIF((ISNULL(" + ifm.FileFields + ",'0001-01-01')='0001-01-01'),'0001-01-01'," + ifm.FileFields + ")";
+                        }
+                        else {
+                            unstring = unstring + "+'#'+" + "IIF((ISNULL(" + ifm.FileFields + ",'0')='0'),'0'," + ifm.FileFields + ")";
+                        }
+                       
                     }
                     indx = indx + 1;
                 }
@@ -2153,10 +2168,16 @@ namespace TZ.Import
                     }
                     else
                     {
-                        if (ifm.IsAutoCode == false)
+                        if (dr.Table.Columns[ifm.FileFields].DataType == System.Type.GetType("System.DateTime"))
                         {
-                            sk.Add(att.Name, dr[ifm.FileFields].ToString().Trim());
+                            sk.Add(att.Name, Convert.ToDateTime(dr[ifm.FileFields]).ToString("yyyy-MM-dd").Trim());
                         }
+                        else {
+                            if (ifm.IsAutoCode == false)
+                            {
+                                sk.Add(att.Name, dr[ifm.FileFields].ToString().Trim());
+                            }
+                        }                       
                     }
                 }
             }
@@ -2727,6 +2748,26 @@ namespace TZ.Import
                                         // sb.Append(" AND " + datafield.Name + "='" + fval.Replace("'", "''") + "'");
                                     }
                                 }
+                                else if (datafield.Type == AttributeType._date || datafield.Type == AttributeType._datetime) {
+                                    if (drSource.Table.Columns[imf.FileFields].DataType == System.Type.GetType("System.DateTime"))
+                                    {
+                                        sb.Append(" AND " + datafield.Name + "='#" + Convert.ToDateTime (fval) + "#'");
+                                    }
+                                    else {
+                                        sb.Append(" AND " + datafield.Name + "='#" + dateparse(fval, imf.DateFormat) + "#'");
+                                    }                                   
+                                    //if (SourceData.Columns[ddfield.FileFields].DataType == System.Type.GetType("System.DateTime"))
+                                    //{
+                                    //    drs = drs.AsEnumerable().Where(x => Convert.ToDateTime(x[i.Key]) == Convert.ToDateTime(i.Value)).ToList();
+                                    //}
+                                    //else
+                                    //{
+                                    //    drs = drs.AsEnumerable().Where(x => Convert.ToDateTime(x[i.Key]) == dateparse(i.Value, ddfield.DateFormat)).ToList();
+                                    //}
+
+
+
+                                }
                                 else
                                 {
                                     if (fval != "")
@@ -2743,22 +2784,34 @@ namespace TZ.Import
 
                     
                 }
-
-                string s = GetParentKey(comp.Component.ID);
                 string ss = sb.ToString();
-                comp.TargetData.DefaultView.RowFilter = ss;
-                var drr = comp.TargetData.Select(ss);
-                if (drr.Count() > 0)
+                try
                 {
-                    kv.Add(s, Convert.ToString(drr[0][s]));
+                    string s = GetParentKey(comp.Component.ID);
+                    
+                    comp.TargetData.DefaultView.RowFilter = ss;
+                    var drr = comp.TargetData.Select(ss);
+                    if (drr.Count() > 0)
+                    {
+                        kv.Add(s, Convert.ToString(drr[0][s]));
+                    }
+                    else
+                    {
+                        kv.Add(s, "-2"); // no key exist in the link
+                    }
+                  
                 }
-                else
-                {
-                    kv.Add(s, "-1");
+
+                catch (Exception ex) {
+                    throw new Exception("Error:3" + ex.Message + "-" + ss);
                 }
+                
+
                 sb = new StringBuilder();
                 index = 0;
             }
+
+            DataTable dtRow = new DataTable();
 
             StringBuilder linkkey= new StringBuilder();
             int ki = 0;
@@ -2773,12 +2826,21 @@ namespace TZ.Import
                 ki = ki + 1;
             }
         
-            DataTable dtRow = new DataTable();
+           
             if (linkkey.ToString() != "")
             {
-                this.TargetData.DefaultView.RowFilter = linkkey.ToString();
-                dtRow = this.TargetData.DefaultView.ToTable(true);
-                this.TargetData.DefaultView.RowFilter = "";
+
+                try
+                {
+                    this.TargetData.DefaultView.RowFilter = linkkey.ToString();
+                    dtRow = this.TargetData.DefaultView.ToTable(true);
+                    this.TargetData.DefaultView.RowFilter = "";
+                    //throw new Exception("Error:linkinfor"  + linkkey + "" + dtRow.Rows.Count);
+                }
+                catch (Exception ex) {
+                    throw new Exception("Error:2" + ex.Message + "-" + linkkey);
+                }
+              
             }           
             foreach (KeyValuePair<string,string> att in kv)
             {
@@ -2797,12 +2859,15 @@ namespace TZ.Import
            
             if (dtRow.Rows.Count > 0)
             {
-              //  log.ExistKey = dtRow.Rows[0][key.Name].ToString();
+               
+                //  log.ExistKey = dtRow.Rows[0][key.Name].ToString();
                 if (isPush == false)
                 {
+                   
                     log.IsExist = true;
                     log.ImportingType = ComponentDataLog.ImportType.UPDATE;
-                   // drSource[key.Name] = dtRow.Rows[0][key.Name].ToString();
+                    //throw new Exception("Error:5 Record Exist" + linkkey + "RowCount:" + dtRow.Rows.Count + " Row Json" + dtRow.DataTableToJSON());
+                    // drSource[key.Name] = dtRow.Rows[0][key.Name].ToString();
                 }
             }
             else
@@ -3196,7 +3261,13 @@ namespace TZ.Import
                         {
                             try
                             {
-                                dr[ifm.FileFields] = dateparse(dr[ifm.FileFields].ToString(), ifm.DateFormat).ToString("yyyy-MM-dd HH:mm:ss");
+                                if (dr.Table.Columns[ifm.FileFields].DataType == System.Type.GetType("System.DateTime")) {
+                                    dr[ifm.FileFields] = Convert.ToDateTime( dr[ifm.FileFields]).ToString("yyyy-MM-dd HH:mm:ss");
+                                }                                
+                                else {
+                                    dr[ifm.FileFields] = dateparse(dr[ifm.FileFields].ToString(), ifm.DateFormat).ToString("yyyy-MM-dd HH:mm:ss");
+                                }
+                              //  dr[ifm.FileFields] = dateparse(dr[ifm.FileFields].ToString(), ifm.DateFormat).ToString("yyyy-MM-dd HH:mm:ss");
                             }
                             catch (Exception e)
                             {
@@ -3219,16 +3290,23 @@ namespace TZ.Import
                             //}
                             //else
                             //{
-                                try
+                            try
+                            {
+                                if (dr.Table.Columns[ifm.FileFields].DataType == System.Type.GetType("System.DateTime"))
                                 {
-                                    dr[ifm.FileFields] = dateparse(dr[ifm.FileFields].ToString(),ifm.DateFormat).ToString("yyyy-MM-dd HH:mm:ss");
+                                    dr[ifm.FileFields] = Convert.ToDateTime(dr[ifm.FileFields]).ToString("yyyy-MM-dd HH:mm:ss");
                                 }
-                                catch (Exception e)
+                                else
                                 {
-                                    log.Message = ifm.FileFields + " invalid date.";
-                                    log.Type = 0;
+                                    dr[ifm.FileFields] = dateparse(dr[ifm.FileFields].ToString(), ifm.DateFormat).ToString("yyyy-MM-dd HH:mm:ss");
+                                }
+                            }
+                            catch (Exception e)
+                            {
+                                log.Message = ifm.FileFields + " invalid date.";
+                                log.Type = 0;
 
-                                }
+                            }
                             //}
                         }
                     }
@@ -3691,8 +3769,13 @@ namespace TZ.Import
                         if (ff.Type == AttributeType._date || ff.Type == AttributeType._datetime)
                         {
                             var ddfield = this.ImportFields.Where(x => x.DataField.ToLower() == ff.ID).FirstOrDefault();
-                            
-                            drs = drs.AsEnumerable().Where(x => Convert.ToDateTime( x[i.Key]) == dateparse(i.Value, ddfield.DateFormat)).ToList();
+                            if (SourceData.Columns[ddfield.FileFields].DataType == System.Type.GetType("System.DateTime"))
+                            {
+                                drs = drs.AsEnumerable().Where(x => Convert.ToDateTime(x[i.Key]) == Convert.ToDateTime (i.Value)).ToList();
+                            }
+                            else {
+                                drs = drs.AsEnumerable().Where(x => Convert.ToDateTime(x[i.Key]) == dateparse(i.Value, ddfield.DateFormat)).ToList();
+                            }                            
                         }
                         else {
                             drs = drs.AsEnumerable().Where(x => x[i.Key].ToString() == i.Value.Trim()).ToList();
