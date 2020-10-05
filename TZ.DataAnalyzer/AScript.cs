@@ -145,7 +145,6 @@ namespace TZ.DataAnalyzer
                         System.Diagnostics.Process proc = new System.Diagnostics.Process();
                         proc.StartInfo = procStartInfo;
                         proc.Start();
-
                         portOpened();
 
                         //Task t = Task.Run(() => {

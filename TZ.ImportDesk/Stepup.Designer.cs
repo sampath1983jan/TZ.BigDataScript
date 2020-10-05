@@ -35,6 +35,7 @@
             this.btnClear = new System.Windows.Forms.Button();
             this.btnConvert = new System.Windows.Forms.Button();
             this.button1 = new System.Windows.Forms.Button();
+            this.button2 = new System.Windows.Forms.Button();
             this.SuspendLayout();
             // 
             // lblTime
@@ -97,21 +98,34 @@
             // button1
             // 
             this.button1.Font = new System.Drawing.Font("Microsoft Sans Serif", 16F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
-            this.button1.Location = new System.Drawing.Point(184, 356);
+            this.button1.Location = new System.Drawing.Point(76, 346);
             this.button1.Name = "button1";
-            this.button1.Size = new System.Drawing.Size(394, 48);
+            this.button1.Size = new System.Drawing.Size(535, 42);
             this.button1.TabIndex = 12;
             this.button1.Text = "Pay Asia Employee Position";
             this.button1.TextAlign = System.Drawing.ContentAlignment.BottomCenter;
             this.button1.UseVisualStyleBackColor = true;
             this.button1.Click += new System.EventHandler(this.button1_Click_1);
             // 
+            // button2
+            // 
+            this.button2.Font = new System.Drawing.Font("Microsoft Sans Serif", 16F, System.Drawing.FontStyle.Bold, System.Drawing.GraphicsUnit.Point, ((byte)(0)));
+            this.button2.Location = new System.Drawing.Point(75, 428);
+            this.button2.Name = "button2";
+            this.button2.Size = new System.Drawing.Size(535, 42);
+            this.button2.TabIndex = 13;
+            this.button2.Text = "Backup";
+            this.button2.TextAlign = System.Drawing.ContentAlignment.BottomCenter;
+            this.button2.UseVisualStyleBackColor = true;
+            this.button2.Click += new System.EventHandler(this.button2_Click);
+            // 
             // Stepup
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(8F, 16F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
             this.BackColor = System.Drawing.SystemColors.ControlLightLight;
-            this.ClientSize = new System.Drawing.Size(680, 460);
+            this.ClientSize = new System.Drawing.Size(680, 524);
+            this.Controls.Add(this.button2);
             this.Controls.Add(this.button1);
             this.Controls.Add(this.btnConvert);
             this.Controls.Add(this.btnClear);
@@ -137,6 +151,7 @@
         private System.Windows.Forms.Button btnClear;
         private System.Windows.Forms.Button btnConvert;
         private System.Windows.Forms.Button button1;
+        private System.Windows.Forms.Button button2;
     }
 }
 

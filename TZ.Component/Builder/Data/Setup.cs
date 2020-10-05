@@ -284,5 +284,23 @@ namespace TZ.CompExtention.Builder.Data
             }
 
         }
+
+        public void AddEmployeeNoAliasField() {
+            DBSchemaProvider provider = db.GetSchemaProvider();
+            DBSchemaTable  table = provider.GetTable("sys_User");
+            var fld =table.Columns.Where(x => x.Name.ToLower() == "oldemployeeno").FirstOrDefault();
+            if (fld == null) {
+                string tblschema = "ALTER TABLE sys_User  ADD oldemployeeno varchar(255) NULL";
+                try
+                {
+                    int r = db.ExecuteNonQuery(tblschema);
+                }
+                catch (System.Exception ex)
+                {
+                    // throw new Exception.TableSchemaException(this.Table, fields, Exception.OperaitonType.addkey, ex.Message);
+                }
+            }
+           // DBSchemaItemRef table = tables.Where(x => x.Name.ToLower() == ).FirstOrDefault();
+        }
     }
 }

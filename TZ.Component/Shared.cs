@@ -8,6 +8,7 @@ using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
 using Tech.Data.Query;
+using Tech.Data.Schema;
 using TZ.CompExtention.Builder;
 using TZ.CompExtention.Builder.Data;
 
@@ -39,6 +40,538 @@ namespace TZ.CompExtention
             s.Clear();
         }
 
+        private static void CreateEmployeeNoAliasField(string conn) {
+            Builder.Data.Setup s = new Builder.Data.Setup(conn);
+            s.AddEmployeeNoAliasField();
+        }
+        #region Lookup
+        #region AlterTable 
+        private static void AlterTableScript(string conn) {
+            //        ALTER TABLE pr_salary_component_advsettings
+            //MODIFY COLUMN IsEmployeeLevelJVCode bit;
+
+            //        ALTER TABLE pr_salary_component_advsettings
+            //        MODIFY COLUMN my_IsZakatComponent bit;
+
+            //        ALTER TABLE pr_salary_component_advsettings
+            //        MODIFY COLUMN IsLeaveEncashmentComponent bit;
+
+            //        ALTER TABLE pr_salary_component_advsettings
+            //        MODIFY COLUMN IsProrate bit;
+
+            //        ALTER TABLE pr_salary_component_advsettings
+            //        MODIFY COLUMN IsLoanComponent bit;
+
+            //        ALTER TABLE pr_salary_component_advsettings
+            //        MODIFY COLUMN IsITProjectionComponent bit;
+            DataBase db = new DataBase();
+            db.InitDbs(conn);
+            string[] QueryArray = { 
+                "ALTER TABLE pr_salary_component_advsettings MODIFY COLUMN IsEmployeeLevelJVCode bit;",
+                "ALTER TABLE pr_salary_component_advsettings  MODIFY COLUMN my_IsZakatComponent bit;",
+                "ALTER TABLE pr_salary_component_advsettings MODIFY COLUMN IsProrate bit;",
+                "ALTER TABLE pr_salary_component_advsettings MODIFY COLUMN IsLoanComponent bit;",
+                "ALTER TABLE pr_salary_component_advsettings MODIFY COLUMN IsITProjectionComponent bit;",
+                "ALTER TABLE `pr_salary_component_advsettings` CHANGE COLUMN `CreatedBy` `CreatedBy` INT(10) NULL ;",
+                "ALTER TABLE  `pr_salary_component_advsettings` CHANGE COLUMN `LastUPD` `LastUPD` DATETIME NULL ; "};
+            try
+            {
+                foreach (string s in QueryArray) {
+                    int r = db.Database.ExecuteNonQuery(s);
+                }              
+            }
+            catch (System.Exception ex)
+            {
+                // throw new Exception.TableSchemaException(this.Table, fields, Exception.OperaitonType.addkey, ex.Message);
+            }
+        }
+        #endregion 
+        private static bool CheckLookupExist(int clientid, string conn, int instanceid)
+        {
+            DataBase db = new DataBase();
+            db.InitDbs(conn);
+            DBComparison dbClient = DBComparison.Compare(DBField.Field("ClientID"), Tech.Data.Compare.Equals, DBConst.Int32(clientid));
+            DBComparison dbfield = DBComparison.Compare(DBField.Field("FieldInstanceID"), Tech.Data.Compare.Equals, DBConst.Int32(instanceid));
+
+            DBQuery select;
+            select = DBQuery.Select().Field("sys_lookup", "FieldInstanceID")
+                .Field("sys_lookup", "Name")
+                .From("sys_lookup").WhereAll(dbClient, dbfield);
+            if (db.Database.GetDatatable(select).Rows.Count > 0)
+            {
+                return true;
+            }
+            else
+                return false;
+        }
+        public static bool CreateHalfDayLookup(int clientid, string conn)
+        {
+            if (CheckLookupExist(clientid, conn, 1000) == true)
+            {
+                return true;
+            }
+            DataBase db = new DataBase();
+            db.InitDbs(conn);
+            DBQuery insert = DBQuery.InsertInto("sys_lookup").
+                       Field(("FieldInstanceID")).
+                        Field(("Name")).
+                         Field(("Type")).
+                          Field(("ClientID")).
+                          Value(DBConst.String("1000")).
+                           Value(DBConst.String("Half Day Type")).
+                            Value(DBConst.String("1")).
+                             Value(DBConst.Int32(clientid))
+                       ;
+            if (db.Database.ExecuteNonQuery(insert) > 0)
+            {
+                // 0 - None,1 - Morning,2 - AfterNoon
+                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
+                    Field(("FieldInstanceID")).
+                     Field(("LookupID")).
+                      Field(("LookupDescription")).
+                       Field(("ClientID")).
+                        Field(("LookupOrder")).
+                       Value(DBConst.String("1000")).
+                        Value(DBConst.String("0")).
+                         Value(DBConst.String("None")).
+                          Value(DBConst.Int32(clientid)).
+                            Value(DBConst.Int32(1))
+                    ;
+                db.Database.ExecuteNonQuery(insert);
+
+                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
+                 Field(("FieldInstanceID")).
+                  Field(("LookupID")).
+                   Field(("LookupDescription")).
+                    Field(("ClientID")).
+                     Field(("LookupOrder")).
+                    Value(DBConst.String("1000")).
+                     Value(DBConst.String("1")).
+                      Value(DBConst.String("Morning")).
+                       Value(DBConst.Int32(clientid)).
+                         Value(DBConst.Int32(2))
+                 ;
+                db.Database.ExecuteNonQuery(insert);
+
+                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
+                  Field(("FieldInstanceID")).
+                   Field(("LookupID")).
+                    Field(("LookupDescription")).
+                     Field(("ClientID")).
+                      Field(("LookupOrder")).
+                     Value(DBConst.String("1000")).
+                      Value(DBConst.String("2")).
+                       Value(DBConst.String("AfterNoon")).
+                        Value(DBConst.Int32(clientid)).
+                          Value(DBConst.Int32(3))
+                  ;
+                db.Database.ExecuteNonQuery(insert);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public static bool CreateHolidayLookUp(int clientid, string conn)
+        {
+            if (CheckLookupExist(clientid, conn, 1001) == true)
+            {
+                return true;
+            }
+            DataBase db = new DataBase();
+            db.InitDbs(conn);
+            DBQuery insert = DBQuery.InsertInto("sys_lookup").
+                       Field(("FieldInstanceID")).
+                        Field(("Name")).
+                         Field(("Type")).
+                          Field(("ClientID")).
+                          Value(DBConst.String("1001")).
+                           Value(DBConst.String("Holiday Type")).
+                            Value(DBConst.String("1")).
+                             Value(DBConst.Int32(clientid))
+                       ;
+            if (db.Database.ExecuteNonQuery(insert) > 0)
+            {
+                // 0 - None,1 - Morning,2 - AfterNoon
+                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
+                    Field(("FieldInstanceID")).
+                     Field(("LookupID")).
+                      Field(("LookupDescription")).
+                       Field(("ClientID")).
+                        Field(("LookupOrder")).
+                       Value(DBConst.String("1001")).
+                        Value(DBConst.String("1")).
+                         Value(DBConst.String("National")).
+                          Value(DBConst.Int32(clientid)).
+                            Value(DBConst.Int32(1))
+                    ;
+                db.Database.ExecuteNonQuery(insert);
+
+                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
+                 Field(("FieldInstanceID")).
+                  Field(("LookupID")).
+                   Field(("LookupDescription")).
+                    Field(("ClientID")).
+                     Field(("LookupOrder")).
+                    Value(DBConst.String("1001")).
+                     Value(DBConst.String("2")).
+                      Value(DBConst.String("Festival")).
+                       Value(DBConst.Int32(clientid)).
+                         Value(DBConst.Int32(2))
+                 ;
+                db.Database.ExecuteNonQuery(insert);
+
+
+
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+        public static bool CreateLeavePeriod(int clientid, string conn)
+        {
+            if (CheckLookupExist(clientid, conn, 1002) == true)
+            {
+                return true;
+            }
+            DataBase db = new DataBase();
+            db.InitDbs(conn);
+            DBQuery insert = DBQuery.InsertInto("sys_lookup").
+                       Field(("FieldInstanceID")).
+                        Field(("Name")).
+                         Field(("Type")).
+                          Field(("ClientID")).
+                          Value(DBConst.String("1002")).
+                           Value(DBConst.String("Leave periods")).
+                            Value(DBConst.String("1")).
+                             Value(DBConst.Int32(clientid))
+                       ;
+            if (db.Database.ExecuteNonQuery(insert) > 0)
+            {
+                // 0 - None,1 - Morning,2 - AfterNoon
+                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
+                    Field(("FieldInstanceID")).
+                     Field(("LookupID")).
+                      Field(("LookupDescription")).
+                       Field(("ClientID")).
+                        Field(("LookupOrder")).
+                       Value(DBConst.String("1002")).
+                        Value(DBConst.String("1")).
+                         Value(DBConst.String("Current Leave Period")).
+                          Value(DBConst.Int32(clientid)).
+                            Value(DBConst.Int32(1))
+                    ;
+                db.Database.ExecuteNonQuery(insert);
+
+                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
+                 Field(("FieldInstanceID")).
+                  Field(("LookupID")).
+                   Field(("LookupDescription")).
+                    Field(("ClientID")).
+                     Field(("LookupOrder")).
+                    Value(DBConst.String("1002")).
+                     Value(DBConst.String("2")).
+                      Value(DBConst.String("Next Leave Period")).
+                       Value(DBConst.Int32(clientid)).
+                         Value(DBConst.Int32(2))
+                 ;
+                db.Database.ExecuteNonQuery(insert);
+
+                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
+              Field(("FieldInstanceID")).
+               Field(("LookupID")).
+                Field(("LookupDescription")).
+                 Field(("ClientID")).
+                  Field(("LookupOrder")).
+                 Value(DBConst.String("1002")).
+                  Value(DBConst.String("3")).
+                   Value(DBConst.String("Previous Leave period")).
+                    Value(DBConst.Int32(clientid)).
+                      Value(DBConst.Int32(2))
+              ;
+                db.Database.ExecuteNonQuery(insert);
+
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public static bool CreatePayType(int clientid, string conn)
+        {
+            if (CheckLookupExist(clientid, conn, 1003) == true)
+            {
+                return true;
+            }
+            DataBase db = new DataBase();
+            db.InitDbs(conn);
+            DBQuery insert = DBQuery.InsertInto("sys_lookup").
+                       Field(("FieldInstanceID")).
+                        Field(("Name")).
+                         Field(("Type")).
+                          Field(("ClientID")).
+                          Value(DBConst.String("1003")).
+                           Value(DBConst.String("Pay Type")).
+                            Value(DBConst.String("1")).
+                             Value(DBConst.Int32(clientid))
+                       ;
+            if (db.Database.ExecuteNonQuery(insert) > 0)
+            {                 
+                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
+                    Field(("FieldInstanceID")).
+                     Field(("LookupID")).
+                      Field(("LookupDescription")).
+                       Field(("ClientID")).
+                        Field(("LookupOrder")).
+                       Value(DBConst.String("1003")).
+                        Value(DBConst.String("0")).
+                         Value(DBConst.String("Earning")).
+                          Value(DBConst.Int32(clientid)).
+                            Value(DBConst.Int32(1))
+                    ;
+                db.Database.ExecuteNonQuery(insert);
+
+                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
+                 Field(("FieldInstanceID")).
+                  Field(("LookupID")).
+                   Field(("LookupDescription")).
+                    Field(("ClientID")).
+                     Field(("LookupOrder")).
+                    Value(DBConst.String("1003")).
+                     Value(DBConst.String("1")).
+                      Value(DBConst.String("Deduction")).
+                       Value(DBConst.Int32(clientid)).
+                         Value(DBConst.Int32(2))
+                 ;
+                db.Database.ExecuteNonQuery(insert);
+
+                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
+              Field(("FieldInstanceID")).
+               Field(("LookupID")).
+                Field(("LookupDescription")).
+                 Field(("ClientID")).
+                  Field(("LookupOrder")).
+                 Value(DBConst.String("1003")).
+                  Value(DBConst.String("2")).
+                   Value(DBConst.String("Reimbursement")).
+                    Value(DBConst.Int32(clientid)).
+                      Value(DBConst.Int32(3))
+              ;
+                db.Database.ExecuteNonQuery(insert);
+
+                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
+             Field(("FieldInstanceID")).
+              Field(("LookupID")).
+               Field(("LookupDescription")).
+                Field(("ClientID")).
+                 Field(("LookupOrder")).
+                Value(DBConst.String("1003")).
+                 Value(DBConst.String("3")).
+                  Value(DBConst.String("Summary")).
+                   Value(DBConst.Int32(clientid)).
+                     Value(DBConst.Int32(4))
+             ;
+                db.Database.ExecuteNonQuery(insert);
+
+
+                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
+             Field(("FieldInstanceID")).
+              Field(("LookupID")).
+               Field(("LookupDescription")).
+                Field(("ClientID")).
+                 Field(("LookupOrder")).
+                Value(DBConst.String("1003")).
+                 Value(DBConst.String("4")).
+                  Value(DBConst.String("One time Earnings")).
+                   Value(DBConst.Int32(clientid)).
+                     Value(DBConst.Int32(5))
+             ;
+                db.Database.ExecuteNonQuery(insert);
+
+
+                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
+             Field(("FieldInstanceID")).
+              Field(("LookupID")).
+               Field(("LookupDescription")).
+                Field(("ClientID")).
+                 Field(("LookupOrder")).
+                Value(DBConst.String("1003")).
+                 Value(DBConst.String("5")).
+                  Value(DBConst.String("One time Deductions")).
+                   Value(DBConst.Int32(clientid)).
+                     Value(DBConst.Int32(6))
+             ;
+                db.Database.ExecuteNonQuery(insert);
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        public static bool CreateTaxType(int clientid, string conn)
+        {
+            if (CheckLookupExist(clientid, conn, 1005) == true)
+            {
+                return true;
+            }
+            DataBase db = new DataBase();
+            db.InitDbs(conn);
+            DBQuery insert = DBQuery.InsertInto("sys_lookup").
+                       Field(("FieldInstanceID")).
+                        Field(("Name")).
+                         Field(("Type")).
+                          Field(("ClientID")).
+                          Value(DBConst.String("1005")).
+                           Value(DBConst.String("Tax Type")).
+                            Value(DBConst.String("1")).
+                             Value(DBConst.Int32(clientid))
+                       ;
+            if (db.Database.ExecuteNonQuery(insert) > 0)
+            {
+                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
+                    Field(("FieldInstanceID")).
+                     Field(("LookupID")).
+                      Field(("LookupDescription")).
+                       Field(("ClientID")).
+                        Field(("LookupOrder")).
+                       Value(DBConst.String("1005")).
+                        Value(DBConst.String("-1")).
+                         Value(DBConst.String("Non-Taxable")).
+                          Value(DBConst.Int32(clientid)).
+                            Value(DBConst.Int32(1))
+                    ;
+                db.Database.ExecuteNonQuery(insert);
+
+                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
+                 Field(("FieldInstanceID")).
+                  Field(("LookupID")).
+                   Field(("LookupDescription")).
+                    Field(("ClientID")).
+                     Field(("LookupOrder")).
+                    Value(DBConst.String("1005")).
+                     Value(DBConst.String("0")).
+                      Value(DBConst.String("Taxable")).
+                       Value(DBConst.Int32(clientid)).
+                         Value(DBConst.Int32(2))
+                 ;
+                db.Database.ExecuteNonQuery(insert);
+
+                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
+              Field(("FieldInstanceID")).
+               Field(("LookupID")).
+                Field(("LookupDescription")).
+                 Field(("ClientID")).
+                  Field(("LookupOrder")).
+                 Value(DBConst.String("1005")).
+                  Value(DBConst.String("1")).
+                   Value(DBConst.String("One time Taxable")).
+                    Value(DBConst.Int32(clientid)).
+                      Value(DBConst.Int32(3))
+              ;
+                db.Database.ExecuteNonQuery(insert);
+ 
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+
+        public static bool CreateCalculationType(int clientid, string conn)
+        {
+            if (CheckLookupExist(clientid, conn, 1004) == true)
+            {
+                return true;
+            }
+            DataBase db = new DataBase();
+            db.InitDbs(conn);
+            DBQuery insert = DBQuery.InsertInto("sys_lookup").
+                       Field(("FieldInstanceID")).
+                        Field(("Name")).
+                         Field(("Type")).
+                          Field(("ClientID")).
+                          Value(DBConst.String("1004")).
+                           Value(DBConst.String("Calculation Type")).
+                            Value(DBConst.String("1")).
+                             Value(DBConst.Int32(clientid))
+                       ;
+            if (db.Database.ExecuteNonQuery(insert) > 0)
+            {
+                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
+                    Field(("FieldInstanceID")).
+                     Field(("LookupID")).
+                      Field(("LookupDescription")).
+                       Field(("ClientID")).
+                        Field(("LookupOrder")).
+                       Value(DBConst.String("1004")).
+                        Value(DBConst.String("0")).
+                         Value(DBConst.String("Fixed")).
+                          Value(DBConst.Int32(clientid)).
+                            Value(DBConst.Int32(1))
+                    ;
+                db.Database.ExecuteNonQuery(insert);
+
+                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
+                 Field(("FieldInstanceID")).
+                  Field(("LookupID")).
+                   Field(("LookupDescription")).
+                    Field(("ClientID")).
+                     Field(("LookupOrder")).
+                    Value(DBConst.String("1004")).
+                     Value(DBConst.String("1")).
+                      Value(DBConst.String("Formula")).
+                       Value(DBConst.Int32(clientid)).
+                         Value(DBConst.Int32(2))
+                 ;
+                db.Database.ExecuteNonQuery(insert);
+
+                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
+              Field(("FieldInstanceID")).
+               Field(("LookupID")).
+                Field(("LookupDescription")).
+                 Field(("ClientID")).
+                  Field(("LookupOrder")).
+                 Value(DBConst.String("1004")).
+                  Value(DBConst.String("2")).
+                   Value(DBConst.String("Slab")).
+                    Value(DBConst.Int32(clientid)).
+                      Value(DBConst.Int32(3))
+              ;
+                db.Database.ExecuteNonQuery(insert);
+
+                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
+             Field(("FieldInstanceID")).
+              Field(("LookupID")).
+               Field(("LookupDescription")).
+                Field(("ClientID")).
+                 Field(("LookupOrder")).
+                Value(DBConst.String("1004")).
+                 Value(DBConst.String("4")).
+                  Value(DBConst.String("System")).
+                   Value(DBConst.Int32(clientid)).
+                     Value(DBConst.Int32(4))
+             ;
+                db.Database.ExecuteNonQuery(insert);
+
+ 
+                return true;
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        #endregion
         public static void ConvertEmployeePositionPayAsia(string connection, int ClientID) {
 
          
@@ -331,10 +864,13 @@ namespace TZ.CompExtention
             // Employee Position End
         }
         public static void ConvertoImportComponent(string connection,int ClientID) {
-          var  dtComponentInstance = CompExtention.Shared.GetComponentList(ClientID, connection);
+            AlterTableScript(connection);
+            CreateEmployeeNoAliasField(connection);
+
+            var  dtComponentInstance = CompExtention.Shared.GetComponentList(ClientID, connection);
             var TZComponents = new List<CompExtention.Builder.TalentozComponent>();
             var dtComp = dtComponentInstance.DefaultView.ToTable(true, "CompType", "CompAttribute");
-            string[] NoComps = "31000,200000,210000,360200,360300,400000,30600,30800,31000,410000,430000,420000,500000,600000,610000,700000,800000,900000,1000000".Split(',');
+            string[] NoComps = "200000,210000,360200,360300,400000,30600,30800,410000,430000,420000,600000,610000,700000,800000,900000,1000000".Split(',');
             DataTable dtRelated = GetRelatedComponent(ClientID, connection);
 
             foreach (DataRow s in dtComp.Rows)
@@ -380,6 +916,7 @@ namespace TZ.CompExtention
                         LookupComponentDisplayField.Add(f);
                     }
                 }
+
                 TalentozComponentFields.Add(f);
             }
             LookUpComponent = LookUpComponent.Distinct().ToList();
@@ -477,6 +1014,25 @@ namespace TZ.CompExtention
 
 
                         }
+                        _att.IsAuto = false;
+                        _att.IsSecured = false;
+                        Comp.AddAttribute(_att);
+                    }
+                    if (comp.ComponentID == 30000) {
+                        CompExtention.Attribute _att = Comp.NewAttribute(ClientID);
+                        _att.Name = "oldemployeeno";
+                        _att.DisplayName = "New Employee No";
+                        _att.DefaultValue = "";
+                        _att.FileExtension = "";
+                        _att.LookupInstanceID = "-1";
+                        _att.Length = 0;
+                        _att.IsUnique = false;
+                        _att.ComponentLookup = "";
+                        _att.ComponentLookupDisplayField = "";
+                        _att.IsRequired = false;
+                        _att.IsNullable = true;
+                        _att.Type =  AttributeType._string;
+                        _att.IsCore = false;                         
                         _att.IsAuto = false;
                         _att.IsSecured = false;
                         Comp.AddAttribute(_att);
@@ -751,10 +1307,9 @@ namespace TZ.CompExtention
                
                 foreach (DataRow dr in dtGroup.Rows)
                 {
-
                    var name = Convert.ToString(dr["FieldGroupName"]);
                    var gpFields= flist.Where(x => x.FieldGroupID == Convert.ToInt32(dr["FieldGroupID"])).ToList();
-                    if (Convert.ToInt32(dr["FieldGroupID"]) ==20 || Convert.ToInt32(dr["FieldGroupID"]) == 100000 ||   Convert.ToInt32(dr["FieldGroupID"]) == 29) {
+                    if (Convert.ToInt32(dr["FieldGroupID"]) ==20 || Convert.ToInt32(dr["FieldGroupID"]) == 28 || Convert.ToInt32(dr["FieldGroupID"]) == 100000 ||   Convert.ToInt32(dr["FieldGroupID"]) == 29) {
                         continue;
                     }
                     // add employee number to this field;
@@ -816,8 +1371,9 @@ namespace TZ.CompExtention
                     
                     }                
                 }
+                var gpes = flist.Where(x => x.FieldGroupID == 28).ToList();
+                ConvertMalysianStat(ClientID, connection, gpes, cms);
             }
-
 
             ConvertEmployeePosition(connection, ClientID, tzComponentWithImportComp);
 
@@ -1009,10 +1565,6 @@ namespace TZ.CompExtention
                 }
             }
 
-                     
-
-
-
             // Employee Relation
 
             cm = new CompExtention.ComponentManager();
@@ -1085,6 +1637,139 @@ namespace TZ.CompExtention
             ConvertToPassword(ClientID, connection);
             ConvertToLearningProgram(ClientID, connection);
             ConvertToEmployeeSchedule(ClientID, connection);
+            ConvertToLeaveEntitlement(ClientID, connection);
+            ConvertToLeaveDeduction(ClientID, connection);
+            EmployeeNoUpdate(ClientID, connection);
+            ConvertToSalaryPayComponent(ClientID, connection);
+        }
+
+        private static bool ConvertMalysianStat(int ClientID, string connection, List <FieldElement> fields, TZ.CompExtention.ComponentManager usercomp) {
+            TZ.CompExtention.ComponentManager cm = new CompExtention.ComponentManager();
+            cm.Set(new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
+            TZ.CompExtention.Component Comp = new CompExtention.Component("Employee Malaysian Statutory", ComponentType.attribute);
+            Comp.TableName = "employee_malaysian_statutory_details";
+
+            CompExtention.Attribute _att_id1 = Comp.NewAttribute(ClientID);
+            _att_id1.IsKey = true;
+            _att_id1.Name = "clientid";
+            _att_id1.DisplayName = "clientid";
+            _att_id1.Type = CompExtention.AttributeType._number;
+            _att_id1.IsNullable = false;
+            _att_id1.ComponentLookup = "";
+            _att_id1.ComponentLookupDisplayField = "";
+            Comp.AddAttribute(_att_id1);
+            Comp.Keys.Add(_att_id1);
+
+            CompExtention.Attribute _att_id2 = Comp.NewAttribute(ClientID);
+
+            _att_id2.IsKey = true;
+            _att_id2.Name = "Userid";
+            _att_id2.DisplayName = "Employee No";
+            _att_id2.ComponentLookup = "";
+            _att_id2.ComponentLookupDisplayField = "";
+
+            _att_id2.Type = CompExtention.AttributeType._componentlookup;
+            _att_id2.IsNullable = false;
+            _att_id2.DisplayName = usercomp.Component.Attributes.Where(x => x.Name == "F_200005").FirstOrDefault().DisplayName;
+            _att_id2.ComponentLookup = usercomp.Component.ID;
+            _att_id2.ComponentLookupDisplayField = usercomp.Component.Attributes.Where(x => x.Name == "F_200005").FirstOrDefault().ID;
+            Comp.AddAttribute(_att_id2);
+            Comp.Keys.Add(_att_id2);
+
+            foreach (CompExtention.Builder.FieldElement f in fields)
+            {
+
+                CompExtention.Attribute _att = Comp.NewAttribute(ClientID);
+                _att.Name = "F_" + f.FieldInstanceID;
+                _att.DisplayName = f.FieldDescription.Replace("(", "").Replace(")", "");
+                _att.DefaultValue = f.DefaultValue;
+                _att.FileExtension = f.FileExtension;
+                _att.LookupInstanceID = f.FieldInstanceLookUpID.ToString();
+                _att.Length = f.MaxLength;
+                _att.IsUnique = f.isUnique;
+                _att.ComponentLookup = "";
+                _att.ComponentLookupDisplayField = "";
+                _att.IsRequired = f.isRequired;
+                _att.IsNullable = true;
+                _att.Type = GetAttributeType(f.FieldTypeID);
+                _att.IsCore = f.isCore;
+                if (f.FieldTypeID == 22)
+                {
+
+
+                }
+                _att.IsAuto = false;
+                _att.IsSecured = false;
+                Comp.AddAttribute(_att);
+            }
+             
+            cm.Save(Comp);
+
+            CompExtention.ComponentViewManager cvm = new CompExtention.ComponentViewManager(new CompExtention.DataAccess.ComponentViewHandler(connection, ClientID));
+            var view = cvm.NewView(Comp.Name);
+            view.CoreComponent = Comp.ID;
+            cvm.Save(view);
+
+
+            var tmp = new CompExtention.ImportTemplate.Template(connection, ClientID);
+            string fmt = "00000000";
+            string formatString = " {0,15:" + fmt + "}";
+            tmp.Name = " Employee Malaysian Statutory";
+            tmp.Code = string.Format(formatString, 0);
+            tmp.Category = "Employee";
+            tmp.ViewID = view.ID;
+            // 200005
+            foreach (FieldElement field in fields)
+            {
+                CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
+                var ifield = cm.Component.Attributes.Where(x => x.Name == "F_" + field.FieldInstanceID).FirstOrDefault();
+                if (ifield != null)
+                {
+                    if (ifield.DisplayName.EndsWith("ID"))
+                    {
+                        continue;
+                    }
+                    te.ID = ifield.ID;
+                    if (ifield.Type == AttributeType._file || ifield.Type == AttributeType._picture)
+                    {
+                        continue;
+                    }
+                    if (field.FieldInstanceID == 200005)
+                    {
+
+                        te.IsKey = true;
+                        te.IsRequired = true;
+                        te.IsDefault = true;
+                    }
+                    else
+                    {
+                        te.IsKey = ifield.IsKey;
+                        te.IsRequired = ifield.IsRequired;
+                        te.IsDefault = true;
+                                             
+                    }
+                    tmp.TemplateFields.Add(te);
+                }
+            }
+            CompExtention.ImportTemplate.TemplateField teempno = new CompExtention.ImportTemplate.TemplateField();
+            var enofield = Comp.Attributes.Where(x => x.Name.ToLower() == "userid").FirstOrDefault();
+            teempno.ID = enofield.ID;
+            teempno.IsKey = true;
+            teempno.IsRequired = true;
+            teempno.IsDefault = true;
+            tmp.TemplateFields.Add(teempno);
+
+             
+            try
+            {
+                tmp.Save();
+            }
+            catch (Exception ex)
+            {
+
+            }
+            return true;
+
         }
         private static bool ConvertClaims(int ClientID, string connection)
         {
@@ -1397,48 +2082,55 @@ namespace TZ.CompExtention
            var  cb = new CompExtention.ComponentBuilder(connection);
             component.Attributes = cb.GetTableFields("employee_dependentdetails_malaysia", ClientID);
             if (component.Attributes.Count > 0) {
+
+                var attt = component.Attributes.Where(x => x.Name.ToLower() == "clientid").FirstOrDefault();
+                if (attt != null) {
+                    attt.IsKey = true;
+                    attt.IsRequired = true;
+                    attt.IsCore = true;
+                    component.Keys.Add(attt);
+                }
+                attt = component.Attributes.Where(x => x.Name.ToLower() == "name").FirstOrDefault();
+                if (attt != null)
+                {
+                    attt.IsKey = true;
+                    attt.IsRequired = true;
+                    attt.IsCore = true;
+                    attt.DisplayName = SplitCamalCase(attt.DisplayName);
+                    component.Keys.Add(attt);
+                }
+                attt = component.Attributes.Where(x => x.Name.ToLower() == "userid").FirstOrDefault();
+                if (attt != null)
+                {
+                    attt.DisplayName = "Employee No";
+                    attt.IsRequired = true;
+                    attt.IsCore = true;
+                    attt.Type = AttributeType._componentlookup;
+                    // att.DisplayName = cms.Component.Attributes.Where(x => x.Name == "F_200005").FirstOrDefault().DisplayName;
+                    attt.ComponentLookup = cms.Component.ID;
+                    attt.ComponentLookupDisplayField = cms.Component.Attributes.Where(x => x.Name == "F_200005").FirstOrDefault().ID;
+                    component.Keys.Add(attt);
+                }
+                attt = component.Attributes.Where(x => x.Name.ToLower() == "dependentid").FirstOrDefault();
+                if (attt != null)
+                {
+                    attt.IsKey = true;
+                    attt.IsRequired = true;
+                    attt.IsCore = true;
+                    attt.DisplayName = SplitCamalCase(attt.DisplayName);
+                    component.Keys.Add(attt);
+                }                
+
                 foreach (Attribute att in component.Attributes)
                 {
                     if (att.Type == AttributeType._picture || att.Type == AttributeType._file)
                     {
                         continue;
                     }
-                    if (att.Name == "LastUPD")
+                    if (att.Name.ToLower () == "LastUPD".ToLower())
                     {
                         continue;
-                    }
-                    if (att.Name == "ClientID")
-                    {
-                        att.IsKey = true;
-                        att.IsRequired = true;
-                        att.IsCore = true;
-                        component.Keys.Add(att);
-                    }
-                    else if (att.Name == "DependentID")
-                    {
-                        att.IsKey = true;
-                        att.IsRequired = true;
-                        att.IsCore = true;
-                        component.Keys.Add(att);
-                    }
-                    else if (att.Name == "Name") {
-                        att.IsKey = true;
-                        att.IsRequired = true;
-                        att.IsCore = true;
-                        att.DisplayName = SplitCamalCase(att.DisplayName);
-                        component.Keys.Add(att);
-                    }
-                    else if (att.Name == "UserID")
-                    {
-                        att.DisplayName = "Employee No";
-                        att.IsRequired = true;
-                        att.IsCore = true;
-                        att.Type = AttributeType._componentlookup;
-                        // att.DisplayName = cms.Component.Attributes.Where(x => x.Name == "F_200005").FirstOrDefault().DisplayName;
-                        att.ComponentLookup = cms.Component.ID;
-                        att.ComponentLookupDisplayField = cms.Component.Attributes.Where(x => x.Name == "F_200005").FirstOrDefault().ID;
-                        component.Keys.Add(att);
-                    }
+                    }                   
                     else if (att.Name.ToLower() == "gender")
                     {
                         att.LookupInstanceID = "102";
@@ -1737,7 +2429,70 @@ namespace TZ.CompExtention
             }
 
         }
+        private static void EmployeeNoUpdate(int ClientID, string connection) {
+            TZ.CompExtention.ComponentManager cms = new CompExtention.ComponentManager(ClientID, "sys_user", new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
+            cms.LoadAttributes();
 
+
+            CompExtention.ComponentViewManager cvm = new CompExtention.ComponentViewManager(new CompExtention.DataAccess.ComponentViewHandler(connection, ClientID));
+            var view = cvm.NewView("Change Employee No.");
+            view.CoreComponent = cms.Component.ID;
+            cvm.Save(view);
+
+            var tmp_er = new CompExtention.ImportTemplate.Template(connection, ClientID);
+            string formatString_er = " {0,15:" + "00000000" + "}";
+            tmp_er.Name = "Change Employee No";
+            tmp_er.Code = string.Format(formatString_er, new Random().Next(1, 200000)).Trim();
+            tmp_er.Category = "Employee";
+            tmp_er.ViewID = cvm.View.ID;
+
+          var att=  cms.Component.Attributes.Where(x => x.Name == "F_200005").FirstOrDefault();
+            CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
+            if (att.Name == "F_200005")
+            {
+                te.IsKey = true;
+            }
+            else
+            {
+                te.IsKey = false;
+            }            
+            te.IsRequired = true;
+            te.ID = att.ID;
+            te.IsDefault = true;          
+            tmp_er.TemplateFields.Add(te);
+
+            att = cms.Component.Attributes.Where(x => x.Name  == "oldemployeeno").FirstOrDefault();
+            te = new CompExtention.ImportTemplate.TemplateField();
+
+            te.IsKey = false;
+            
+            te.IsRequired = true;
+            te.ID = att.ID;
+            te.IsDefault = true;
+            tmp_er.TemplateFields.Add(te);
+            //foreach (Attribute att in cms.Component.Attributes)
+            //{
+            //    if (att.Name == "F_200005" || att.Name == "F_200245")
+            //    {
+
+            //        CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
+            //        if (att.Name == "F_200005")
+            //        {
+            //            te.IsKey = true;
+            //        }
+            //        else
+            //        {
+            //            te.IsKey = false;
+            //        }
+            //        te.IsRequired = true;
+            //        te.ID = att.ID;
+            //        te.IsDefault = true;
+            //        tmp_er.TemplateFields.Add(te);
+            //    }
+            //}
+            tmp_er.Save();
+
+        }
         private static void ConvertToPassword(int ClientID, string connection) {
             TZ.CompExtention.ComponentManager cms = new CompExtention.ComponentManager(ClientID, "sys_user", new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
             cms.LoadAttributes();
@@ -1913,7 +2668,6 @@ namespace TZ.CompExtention
            
 
         }
-
         private static CompExtention.ComponentManager ConvertToSchedule(int ClientID, string connection)
         {
             var cm = new CompExtention.ComponentManager();
@@ -2088,6 +2842,519 @@ namespace TZ.CompExtention
 
         }
 
+        private static void ConvertToLeaveEntitlement(int ClientID, string connection) {
+            TZ.CompExtention.ComponentManager employee = new CompExtention.ComponentManager(ClientID, "sys_user", new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
+            employee.LoadAttributes();
+
+            TZ.CompExtention.ComponentManager leavetype = new CompExtention.ComponentManager(ClientID, "lms_leave_type", new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
+            leavetype.LoadAttributes();
+            CreateLeavePeriod(ClientID, connection);
+
+
+            var cm = new CompExtention.ComponentManager();
+            cm.Set(new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
+            cm.NewComponent(ClientID, "Leave Entitlement", (CompExtention.ComponentType.transaction));
+            var component = (CompExtention.Component)cm.Component;
+            component.TableName = "lms_entitlement";
+            component.EntityKey = "EntitlementID";
+            var cb = new CompExtention.ComponentBuilder(connection);
+            component.Attributes = cb.GetTableFields("lms_entitlement", ClientID);
+
+            if (component.Attributes.Count > 0)
+            {
+                var attt = component.Attributes.Where(x => x.Name == "ClientID").FirstOrDefault();
+                if (attt.Name == "ClientID")
+                {
+                    attt.IsKey = true;
+                    attt.IsRequired = true;
+                    attt.IsCore = true;
+                    component.Keys.Add(attt);
+                }
+                attt = component.Attributes.Where(x => x.Name == "LeaveType").FirstOrDefault();
+                if (attt.Name == "LeaveType")
+                {
+                    attt.IsRequired = true;
+                    attt.IsKey = true;
+                    attt.IsCore = true;
+                    attt.DisplayName = "Leave Type";
+                    attt.Type = AttributeType._componentlookup;
+                    attt.ComponentLookup = leavetype.Component.ID;
+                    attt.ComponentLookupDisplayField = leavetype.Component.Attributes.Where(x => x.Name == "LeaveType").FirstOrDefault().ID;
+                    component.Keys.Add(attt);
+                }
+                attt = component.Attributes.Where(x => x.Name == "EntitlementID").FirstOrDefault();
+                if (attt.Name == "EntitlementID")
+                {
+                    attt.IsKey = true;
+                    attt.IsRequired = true;
+                    attt.IsCore = true;
+                    component.Keys.Add(attt);
+                }
+
+                foreach (Attribute att in component.Attributes)
+                {                   
+                     if (att.Name == "EntitlementNumber")
+                    {
+                        att.IsRequired = true;
+                        att.IsKey = false;
+                        att.IsCore = true;
+                        att.DisplayName = "Employee No";
+                        att.Type = AttributeType._componentlookup;
+                        att.ComponentLookup = employee.Component.ID;
+                        att.ComponentLookupDisplayField = employee.Component.Attributes.Where(x => x.Name == "F_200005").FirstOrDefault().ID;
+                    }
+                    else if (att.Name == "EntitlementMode")
+                    {
+                        att.IsRequired = true;
+                        att.IsKey = false;
+                        att.IsCore = true;
+                        att.DisplayName = "Leave Period";
+                        att.Type = AttributeType._lookup;
+                        att.LookupInstanceID = "1002";
+                    }
+
+                    else if (att.Name == "EntitlementDays")
+                    {
+                        att.IsRequired = true;
+                        att.IsKey = false;
+                        att.IsCore = true;
+                        att.DisplayName = "Actual Balance";
+                        att.Type = AttributeType._decimal;
+                    }
+                    
+                    else if (att.Name == "Remarks")
+                    {
+                        att.IsRequired = true;
+                        att.IsKey = false;
+                        att.IsCore = true;
+                        att.DisplayName = "Carrryforward Balance";
+                        att.Type = AttributeType._decimal;
+                    }
+                    else {
+                        att.IsRequired = false;
+                        att.IsKey = false;
+                        att.IsCore = false;
+                        att.DisplayName = SplitCamalCase(att.DisplayName);
+                    }
+                }
+                cm.Save(component);
+
+
+                CompExtention.ComponentViewManager cvm = new CompExtention.ComponentViewManager(new CompExtention.DataAccess.ComponentViewHandler(connection, ClientID));
+                var view = cvm.NewView(component.Name);
+                view.CoreComponent = component.ID;
+                cvm.Save(view);
+
+
+                var tmp_er = new CompExtention.ImportTemplate.Template(connection, ClientID);
+
+                string formatString_er = " {0,15:" + "00000000" + "}";
+                tmp_er.Name = cm.Component.Name;
+                tmp_er.Code = string.Format(formatString_er, new Random().Next(1, 200000)).Trim();
+                tmp_er.Category = "LMS";
+                tmp_er.ViewID = cvm.View.ID;
+
+                foreach (Attribute att in cm.Component.Attributes)
+                {
+
+                    if (att.Name == "LeaveType")
+                    {
+                        CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
+                        te.IsKey = true;
+                        te.IsRequired = true;
+                        te.ID = att.ID;
+                        te.IsDefault = true;
+                        tmp_er.TemplateFields.Add(te);
+                    }
+                    else if (att.Name == "EntitlementNumber")
+                    {
+                        CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
+                        te.IsKey = true;
+                        te.IsRequired = true;
+                        te.ID = att.ID;
+                        te.IsDefault = true;
+                        tmp_er.TemplateFields.Add(te);
+                    }
+                    else if (att.Name == "EntitlementMode")
+                    {
+                        CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
+                        te.IsKey = true;
+                        te.IsRequired = true;
+                        te.ID = att.ID;
+                        te.IsDefault = true;
+                        tmp_er.TemplateFields.Add(te);
+                    }
+                    else if (att.Name == "EntitlementDays")
+                    {
+                        CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
+                        te.IsKey = true;
+                        te.IsRequired = true;
+                        te.ID = att.ID;
+                        te.IsDefault = true;
+                        tmp_er.TemplateFields.Add(te);
+                    }
+                    else if (att.Name == "Remarks")
+                    {
+                        CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
+                        te.IsKey = false;
+                        te.IsRequired = true;
+                        te.ID = att.ID;
+                        te.IsDefault = true;
+                        tmp_er.TemplateFields.Add(te);
+                    }
+
+
+
+                }
+                tmp_er.Save();
+
+
+            }
+
+
+
+        }
+
+        private static void ConvertToLeaveDeduction(int ClientID, string connection)
+        {
+            //TZ.CompExtention.ComponentManager employee = new CompExtention.ComponentManager(ClientID, "sys_user", new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
+            //employee.LoadAttributes();
+
+            //TZ.CompExtention.ComponentManager leavetype = new CompExtention.ComponentManager(ClientID, "lms_leave_type", new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
+            //leavetype.LoadAttributes();
+            //CreateLeavePeriod(ClientID, connection);
+
+            TZ.CompExtention.ComponentManager entitlement = new CompExtention.ComponentManager(ClientID, "lms_entitlement", new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
+            entitlement.LoadAttributes();
+
+          
+
+
+                CompExtention.ComponentViewManager cvm = new CompExtention.ComponentViewManager(new CompExtention.DataAccess.ComponentViewHandler(connection, ClientID));
+                var view = cvm.NewView("Leave Deduction");
+                view.CoreComponent = entitlement.Component.ID;
+                cvm.Save(view);
+
+
+                var tmp_er = new CompExtention.ImportTemplate.Template(connection, ClientID);
+
+                string formatString_er = " {0,15:" + "00000000" + "}";
+                tmp_er.Name = "Leave Deduction";
+                tmp_er.Code = string.Format(formatString_er, new Random().Next(1, 200000)).Trim();
+                tmp_er.Category = "LMS";
+                tmp_er.ViewID = cvm.View.ID;
+
+                foreach (Attribute att in entitlement.Component.Attributes)
+                {
+
+                    if (att.Name == "LeaveType")
+                    {
+                        CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
+                        te.IsKey = true;
+                        te.IsRequired = true;
+                        te.ID = att.ID;
+                        te.IsDefault = true;
+                        tmp_er.TemplateFields.Add(te);
+                    }
+                    else if (att.Name == "EntitlementNumber")
+                    {
+                        CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
+                        te.IsKey = true;
+                        te.IsRequired = true;
+                        te.ID = att.ID;
+                        te.IsDefault = true;
+                        tmp_er.TemplateFields.Add(te);
+                    }
+                    else if (att.Name == "EntitlementMode")
+                    {
+                        CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
+                        te.IsKey = true;
+                        te.IsRequired = true;
+                        te.ID = att.ID;
+                        te.IsDefault = true;
+                        tmp_er.TemplateFields.Add(te);
+                    }
+                    else if (att.Name == "EntitlementDays")
+                    {
+                        CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
+                        te.IsKey = true;
+                        te.IsRequired = true;
+                        te.ID = att.ID;
+                        te.IsDefault = true;
+                        tmp_er.TemplateFields.Add(te);
+                    }
+                    else if (att.Name == "Remarks")
+                    {
+                        CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
+                        te.IsKey = false;
+                        te.IsRequired = true;
+                        te.ID = att.ID;
+                        te.IsDefault = true;
+                        tmp_er.TemplateFields.Add(te);
+                    }
+
+
+
+                }
+                tmp_er.Save();
+
+
+           
+
+
+
+        }
+
+        private static void ConvertToSalaryPayComponent(int ClientID, string connection) {
+            CreatePayType(ClientID, connection);
+            CreateCalculationType(ClientID, connection);
+            CreateTaxType(ClientID, connection);
+            var cm = new CompExtention.ComponentManager();
+            cm.Set(new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
+            cm.NewComponent(ClientID, "Salary Component", (CompExtention.ComponentType.core));
+            var component = (CompExtention.Component)cm.Component;
+            component.TableName = "pr_salary_component";
+            component.EntityKey = "PRComponentID";
+            var cb = new CompExtention.ComponentBuilder(connection);
+            component.Attributes = cb.GetTableFields("pr_salary_component", ClientID);
+            var salarycompFields = "ClientID,ComponentID,ComponentName,ComponentCode,PayType,IsPaidComponent,CalculationType,Formula,ComponentType,ComponentDisplayName,ComponentDisplayCode,ConsiderForLOP,RoundOffType,ComponentOrder".Split(',');
+
+            var att = component.Attributes.Where(x => x.Name == "ClientID").FirstOrDefault();             
+            att.IsKey = true;
+            att.IsRequired = true;
+            att.IsCore = true;
+            component.Keys.Add(att);          
+            att = component.Attributes.Where(x => x.Name == "ComponentID").FirstOrDefault();
+            att.IsRequired = true;
+            att.IsKey = true;
+            att.IsCore = true;
+            component.Keys.Add(att);
+
+            foreach (string a in salarycompFields) {
+                var attt= component.Attributes.Where(x => x.Name == "PayType").FirstOrDefault();
+                if (attt != null) {
+                    attt.LookupInstanceID = "1003";
+                    attt.Type = AttributeType._lookup;
+                    attt.DisplayName = SplitCamalCase(attt.DisplayName);
+                }
+                  attt = component.Attributes.Where(x => x.Name == "CalculationType").FirstOrDefault();
+                if (attt != null)
+                {
+                    attt.LookupInstanceID = "1004";
+                    attt.Type = AttributeType._lookup;
+                    attt.DisplayName = SplitCamalCase(attt.DisplayName);
+                }
+                attt = component.Attributes.Where(x => x.Name == "RoundOffType").FirstOrDefault();
+                if (attt != null)
+                {
+                    attt.LookupInstanceID = "269";
+                    attt.Type = AttributeType._lookup;
+                    attt.DisplayName = SplitCamalCase(attt.DisplayName);
+                }
+                attt = component.Attributes.Where(x => x.Name == "ComponentType").FirstOrDefault();
+                if (attt != null)
+                {
+                    attt.LookupInstanceID = "275";
+                    attt.Type = AttributeType._lookup;
+                    attt.DisplayName = SplitCamalCase(attt.DisplayName);
+                }
+                attt = component.Attributes.Where(x => x.Name.ToLower() == "ConsiderForLOP".ToLower()).FirstOrDefault();
+                if (attt != null)
+                {                  
+                    attt.Type = AttributeType._bit;
+                    attt.DisplayName = SplitCamalCase(attt.DisplayName);
+                }
+                attt = component.Attributes.Where(x => x.Name.ToLower() == a.ToLower()).FirstOrDefault();
+                if (attt != null)
+                {
+                    attt.DisplayName = SplitCamalCase(attt.DisplayName);
+                }
+            }
+            cm.Save(component);
+
+
+            var cm_paysetting = new CompExtention.ComponentManager();
+            cm_paysetting.Set(new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
+            cm_paysetting.NewComponent(ClientID, "Salary Component Setting", (CompExtention.ComponentType.link));
+            var comp_paysetting = (CompExtention.Component)cm_paysetting.Component;
+            comp_paysetting.TableName = "pr_salary_component_advsettings";
+            //comp_paysetting.EntityKey = "ComponentID";
+            var cb_paysetting = new CompExtention.ComponentBuilder(connection);
+            comp_paysetting.Attributes = cb_paysetting.GetTableFields("pr_salary_component_advsettings", ClientID);
+            var salarysettingFields = "ClientID,ComponentID,IsOnetimeTaxable,ComponentGrouping,my_EAFormLineType,my_IsZakatComponent,IsITProjectionComponent,IsProrate".Split(',');
+
+              att = comp_paysetting.Attributes.Where(x => x.Name == "ClientID").FirstOrDefault();
+            att.IsKey = true;
+            att.IsRequired = true;
+            att.IsCore = true;
+            comp_paysetting.Keys.Add(att);
+            att = comp_paysetting.Attributes.Where(x => x.Name == "ComponentID").FirstOrDefault();
+            att.IsRequired = true;
+            att.IsKey = true;
+            att.IsCore = true;
+            comp_paysetting.Keys.Add(att);
+
+            foreach (string s in salarysettingFields) {
+                att = comp_paysetting.Attributes.Where(x => x.Name == "IsOneTimeTaxable").FirstOrDefault();
+                if (att != null)
+                {
+                    att.LookupInstanceID = "1005";
+                    att.Type = AttributeType._lookup;
+                    att.DisplayName = SplitCamalCase(att.DisplayName);
+                }
+                att = comp_paysetting.Attributes.Where(x => x.Name == "ComponentGrouping").FirstOrDefault();
+                if (att != null)
+                {
+                    att.LookupInstanceID = "272";
+                    att.Type = AttributeType._lookup;
+                    att.DisplayName = SplitCamalCase(att.DisplayName);
+                }
+
+                att = comp_paysetting.Attributes.Where(x => x.Name == "my_EAFormLineType").FirstOrDefault();
+                if (att != null)
+                {
+                    att.LookupInstanceID = "270";
+                    att.Type = AttributeType._lookup;
+                    att.DisplayName = "EAForm Linetype";
+                }
+                att = comp_paysetting.Attributes.Where(x => x.Name == "my_IsZakatComponent").FirstOrDefault();
+                if (att != null)
+                {
+                    att.Type = AttributeType._bit;
+                    att.DisplayName = "Is Zakat Component";
+                }
+                att = comp_paysetting.Attributes.Where(x => x.Name == "IsITProjectionComponent").FirstOrDefault();
+                if (att != null)
+                {
+                    att.Type = AttributeType._bit;
+                    att.DisplayName = "Is IT Projection Component";
+                }
+                att = comp_paysetting.Attributes.Where(x => x.Name == "IsProrate").FirstOrDefault();
+                if (att != null)
+                {
+                    att.Type = AttributeType._bit;
+                    att.DisplayName = "Is Prorate";
+                }
+
+                att = comp_paysetting.Attributes.Where(x => x.Name.ToLower() == s.ToLower()).FirstOrDefault();
+                if (att != null) { 
+                att.DisplayName = SplitCamalCase(att.DisplayName);
+                }
+                //att.DisplayName = SplitCamalCase(att.DisplayName);
+            }
+            cm_paysetting.Save(comp_paysetting);
+
+            //IsOnetimeTaxable = -1,0,1 ()
+            //IsLoanComponent =true/false,
+            //IsLeaveEncashmentComponent =true/false
+            //IsOvertimeComponent = true/false
+            //ComponentGrouping = lookup 272
+            //my_iszakatComponent =true/false
+            //isitprojectioncomponent=true/false
+            //isprorate =true/false
+
+            CompExtention.ComponentViewManager cvSalaryComp = new CompExtention.ComponentViewManager(new CompExtention.DataAccess.ComponentViewHandler(connection, ClientID));
+            var view_ep = cvSalaryComp.NewView("Salary Pay components");
+
+            var vr_ep = new CompExtention.ComponentRelation();
+            var vritem_ep = new ViewRelation();
+            vr_ep.ComponentID = cm.Component.ID;
+            vr_ep.ChildComponentID = Convert.ToString(cm_paysetting.Component.ID);
+            vr_ep.Relationship.Add(new ViewRelation() { Left = vr_ep.ComponentID, Right = vr_ep.ChildComponentID, LeftField = "ComponentID", RightField = "ComponentID" });
+            vr_ep.Relationship.Add(new ViewRelation() { Left = vr_ep.ComponentID, Right = vr_ep.ChildComponentID, LeftField = "ClientID", RightField = "ClientID" });
+            view_ep.CoreComponent = vr_ep.ComponentID;
+            view_ep.ComponentRelations.Add(vr_ep);
+
+            cvSalaryComp.Save(view_ep);
+            cvSalaryComp.LoadViewComponents();
+
+            var tmp_ep = new CompExtention.ImportTemplate.Template(connection, ClientID);
+
+            string formatString_ep = " {0,15:" + "00000000" + "}";
+            tmp_ep.Name = "Salary Pay components";
+            tmp_ep.Code = string.Format(formatString_ep, 15003).Trim();
+            tmp_ep.Category = "Payroll";
+            tmp_ep.ViewID = cvSalaryComp.View.ID;
+
+                    
+            foreach (Component c in cvSalaryComp.View.Components)
+            {
+                //"ClientID,ComponentID,ComponentName,ComponentCode,PayType,IsPaidComponent,CalculationType,Formula,ComponentType,ComponentDisplayName,ComponentDisplayCode,RoundoffType".Split(',')
+                foreach (Attribute attt in c.Attributes)
+                {
+                    if (c.ID == cm.Component.ID)
+                    {
+                        if (salarycompFields.Where(x => x.ToLower() == attt.Name.ToLower()).FirstOrDefault() != null)
+                        {
+                            CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
+                            if (attt.Name == "ComponentName" 
+                                || attt.Name == "ComponentCode" || attt.Name == "PayType" 
+                                || attt.Name == "IsPaidComponent" || attt.Name == "CalculationType"
+                                || attt.Name == "Formula" || attt.Name == "ComponentType"
+                                || attt.Name == "ComponentDisplayName" || attt.Name == "ComponentDisplayCode"
+                                || attt.Name.ToLower() == "ConsiderForLOP".ToLower()
+                                || attt.Name.ToLower() == "RoundOffType".ToLower()
+                                || attt.Name.ToLower() == "ComponentOrder".ToLower())
+                            {
+                                if (attt.Name == "ComponentCode")
+                                {
+                                    te.ID = attt.ID;
+                                    te.IsKey = true;
+                                    te.IsDefault = true;
+                                    te.IsRequired = true;
+                                }
+                                else if (attt.Name == "ComponentName"  || attt.Name == "PayType" || attt.Name == "CalculationType" || attt.Name =="ComponentType") {
+                                    te.ID = attt.ID;
+                                    te.IsKey = false;
+                                    te.IsDefault = true;
+                                    te.IsRequired = true;
+                                }
+                                else
+                                {
+                                    te.ID = attt.ID;
+                                    te.IsKey = false;
+                                    te.IsDefault = true;
+                                    te.IsRequired = false;
+                                }
+                                tmp_ep.TemplateFields.Add(te);
+                            }                             
+                        }
+                    }
+                   // "ClientID,ComponentID,IsOnetimeTaxable,ComponentGrouping,my_EAFormLineType,my_IsZakatComponent,IsITProjectionComponent,IsProrate".
+                    else if (c.ID == cm_paysetting.Component.ID)
+                    {
+                        if (salarysettingFields.Where(x => x.ToLower() == attt.Name.ToLower()).FirstOrDefault() != null)
+                        {
+                            CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
+                            te.ID = attt.ID;
+                            if (attt.Name == "ClientID" || attt.Name == "ComponentID") {
+                                continue;
+                            }
+                            if (attt.Name == "IsOneTimeTaxable" || attt.Name == "ComponentGrouping")
+                            {
+                                te.IsKey = false;
+                                te.IsDefault = true;
+                                te.IsRequired = true;
+                                tmp_ep.TemplateFields.Add(te);
+                            }
+                            else
+                            {
+                                te.IsKey = false;
+                                te.IsDefault = false;
+                                te.IsRequired = false;
+                                tmp_ep.TemplateFields.Add(te);
+                            }
+                        }
+                    }                     
+                }
+            }
+            tmp_ep.Save();
+
+
+
+
+        }
+
         private static void ConvertToGoal(int ClientID, string connection) {
             TZ.CompExtention.ComponentManager cms = new CompExtention.ComponentManager(ClientID, "sys_user", new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
             cms.LoadAttributes();
@@ -2098,147 +3365,8 @@ namespace TZ.CompExtention
 
         }
 
-        private static bool CheckLookupExist(int clientid, string conn,int instanceid) {
-            DataBase db = new DataBase();
-            db.InitDbs(conn);
-            DBComparison dbClient = DBComparison.Compare(DBField.Field("ClientID"), Tech.Data.Compare.Equals, DBConst.Int32(clientid));
-            DBComparison dbfield = DBComparison.Compare(DBField.Field("FieldInstanceID"), Tech.Data.Compare.Equals, DBConst.Int32(instanceid));
+   
 
-            DBQuery select;
-            select = DBQuery.Select().Field("sys_lookup", "FieldInstanceID")
-                .Field("sys_lookup", "Name")
-                .From("sys_lookup").WhereAll(dbClient, dbfield);
-            if (db.Database.GetDatatable(select).Rows.Count > 0)
-            {
-                return true;
-            }
-            else
-                return false;
-        }
-        public static bool CreateHalfDayLookup(int clientid,string conn) {
-            if (CheckLookupExist(clientid, conn,1000) == true) {
-                return true;
-            }
-            DataBase db = new DataBase();
-            db.InitDbs(conn);
-            DBQuery insert = DBQuery.InsertInto("sys_lookup").
-                       Field(("FieldInstanceID")).
-                        Field(("Name")).
-                         Field(("Type")).
-                          Field(("ClientID")).
-                          Value(DBConst.String("1000")).
-                           Value(DBConst.String("Half Day Type")).
-                            Value(DBConst.String("1")).
-                             Value(DBConst.Int32(clientid ))
-                       ;
-            if (db.Database.ExecuteNonQuery(insert) > 0)
-            {
-                // 0 - None,1 - Morning,2 - AfterNoon
-                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
-                    Field(("FieldInstanceID")).
-                     Field(("LookupID")).
-                      Field(("LookupDescription")).
-                       Field(("ClientID")).
-                        Field(("LookupOrder")).
-                       Value(DBConst.String("1000")).
-                        Value(DBConst.String("0")).
-                         Value(DBConst.String("None")).
-                          Value(DBConst.Int32(clientid)).
-                            Value(DBConst.Int32(1))
-                    ;
-                db.Database.ExecuteNonQuery(insert);
-
-                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
-                 Field(("FieldInstanceID")).
-                  Field(("LookupID")).
-                   Field(("LookupDescription")).
-                    Field(("ClientID")).
-                     Field(("LookupOrder")).
-                    Value(DBConst.String("1000")).
-                     Value(DBConst.String("1")).
-                      Value(DBConst.String("Morning")).
-                       Value(DBConst.Int32(clientid)).
-                         Value(DBConst.Int32(2))
-                 ;
-                db.Database.ExecuteNonQuery(insert);
-
-                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
-                  Field(("FieldInstanceID")).
-                   Field(("LookupID")).
-                    Field(("LookupDescription")).
-                     Field(("ClientID")).
-                      Field(("LookupOrder")).
-                     Value(DBConst.String("1000")).
-                      Value(DBConst.String("2")).
-                       Value(DBConst.String("AfterNoon")).
-                        Value(DBConst.Int32(clientid)).
-                          Value(DBConst.Int32(3))
-                  ;
-                db.Database.ExecuteNonQuery(insert);
-                return true;
-            }
-            else {
-                return false;
-            }
-        }
-        public static bool CreateHolidayLookUp(int clientid, string conn)
-        {
-            if (CheckLookupExist(clientid, conn,1001) == true)
-            {
-                return true;
-            }
-            DataBase db = new DataBase();
-            db.InitDbs(conn);
-            DBQuery insert = DBQuery.InsertInto("sys_lookup").
-                       Field(("FieldInstanceID")).
-                        Field(("Name")).
-                         Field(("Type")).
-                          Field(("ClientID")).
-                          Value(DBConst.String("1001")).
-                           Value(DBConst.String("Holiday Type")).
-                            Value(DBConst.String("1")).
-                             Value(DBConst.Int32(clientid))
-                       ;
-            if (db.Database.ExecuteNonQuery(insert) > 0)
-            {
-                // 0 - None,1 - Morning,2 - AfterNoon
-                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
-                    Field(("FieldInstanceID")).
-                     Field(("LookupID")).
-                      Field(("LookupDescription")).
-                       Field(("ClientID")).
-                        Field(("LookupOrder")).
-                       Value(DBConst.String("1001")).
-                        Value(DBConst.String("1")).
-                         Value(DBConst.String("National")).
-                          Value(DBConst.Int32(clientid)).
-                            Value(DBConst.Int32(1))
-                    ;
-                db.Database.ExecuteNonQuery(insert);
-
-                insert = DBQuery.InsertInto("sys_Fieldinstancelookup").
-                 Field(("FieldInstanceID")).
-                  Field(("LookupID")).
-                   Field(("LookupDescription")).
-                    Field(("ClientID")).
-                     Field(("LookupOrder")).
-                    Value(DBConst.String("1001")).
-                     Value(DBConst.String("2")).
-                      Value(DBConst.String("Festival")).
-                       Value(DBConst.Int32(clientid)).
-                         Value(DBConst.Int32(2))
-                 ;
-                db.Database.ExecuteNonQuery(insert);
-
-                
-               
-                return true;
-            }
-            else
-            {
-                return false;
-            }
-        }
 
         private static void ConvertLeaveTransaction(int ClientID, string connection)
         {
@@ -2289,7 +3417,56 @@ namespace TZ.CompExtention
             string leavetype = cm.Component.ID;
             IComponent ltype = cm.Component;
 
-                cm = new CompExtention.ComponentManager();
+            #region Leave Reason
+
+            cm = new CompExtention.ComponentManager();
+            cm.Set(new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
+            cm.NewComponent(ClientID, "Leave Reason", (CompExtention.ComponentType.core));
+              component = (CompExtention.Component)cm.Component;
+            component.TableName = "lms_reasonfor_leave";
+
+              cb = new CompExtention.ComponentBuilder(connection);
+            component.Attributes = cb.GetTableFields("lms_reasonfor_leave", ClientID);
+
+            if (component.Attributes.Count > 0)
+            {
+                foreach (Attribute att in component.Attributes)
+                {
+                    if (att.Name == "ClientID")
+                    {
+                        att.IsKey = true;
+                        att.IsRequired = true;
+                        att.IsCore = true;
+                        component.Keys.Add(att);
+                    }
+                    if (att.Name == "ReasonID")
+                    {
+                        att.IsKey = true;
+                        att.IsRequired = true;
+                        att.IsCore = true;
+                        component.Keys.Add(att);
+                    }
+                    if (att.Name == "LeaveTypeID")
+                    {
+                        att.IsRequired = true;
+                        att.IsKey = false;
+                        att.IsCore = true;
+                        att.DisplayName = "Leave Type";
+                        att.Type = AttributeType._componentlookup;
+                        att.ComponentLookup = leavetype;
+                        att.ComponentLookupDisplayField = ltype.Attributes.Where(x => x.Name == "LeaveType").FirstOrDefault().ID;
+                    }
+
+                }
+
+
+                cm.Save(component);
+            }
+            string leavereason = cm.Component.ID;
+            IComponent lvrComp = cm.Component;
+            #endregion
+
+            cm = new CompExtention.ComponentManager();
             cm.Set(new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
             cm.NewComponent(ClientID, "Leave Transaction", (CompExtention.ComponentType.attribute));
               component = (CompExtention.Component)cm.Component;
@@ -2319,10 +3496,21 @@ namespace TZ.CompExtention
                     if (att.Name == "IsPartialDay")
                     {
                         att.Type  = AttributeType._bit;
-                     
+
                         //att.DisplayName = SplitCamalCase(att.DisplayName);             
                     }
+                    if (att.Name == "Description")
+                    {
+                        att.DisplayName ="Leave Remarks";
 
+                        //att.DisplayName = SplitCamalCase(att.DisplayName);             
+                    }
+                    if (att.Name.ToLower() == "Remarks".ToLower()) {
+                        att.DisplayName = "Reason";
+                        att.Type = AttributeType._componentlookup;
+                        att.ComponentLookup = leavereason;
+                        att.ComponentLookupDisplayField = lvrComp.Attributes.Where(x => x.Name == "Reason").FirstOrDefault().ID;
+                    }
                     if (att.Name == "StartDate")
                     {
                         att.IsKey = true;
@@ -2405,13 +3593,13 @@ namespace TZ.CompExtention
                         || att.Name == "IsPartialDay"                         
                         || att.Name == "Description"
                         || att.Name == "NoOfDays"
-                        || att.Name == "StartDuration"
+                        || att.Name == "StartDuration" || att.Name == "Remarks"
                        ) {
                         CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
                         te.IsKey = false;                      
                         te.ID = att.ID;
                          
-                        if (att.Name == "Description")
+                        if (att.Name == "Description" || att.Name =="Remarks")
                         {
                             te.IsRequired = false;
                         }
@@ -2649,7 +3837,6 @@ namespace TZ.CompExtention
                 .From("sys_relatedcomponent").WhereAll(dbClient);
             return db.Database.GetDatatable(select);
         }
-
         public static string[] GetCSVToArray(this DataTable dataTable) {
             List<string> fileContent = new List<string>();
             List<string> cols= new List<string>();

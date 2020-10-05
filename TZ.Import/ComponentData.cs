@@ -406,7 +406,28 @@ namespace TZ.Import
                 }
                 else
                 {
-                    dm.InsertInto(dc.ColumnName, FieldType._string);
+                    var dd = this.Component.Attributes.Where(x => x.Name == dc.ColumnName).FirstOrDefault();
+                    if (dd != null)
+                    {
+                        if (dd.Type == AttributeType._bit)
+                        {
+                            dm.InsertInto(dc.ColumnName, FieldType._bool);
+                        }
+                        else if (dd.Type == AttributeType._datetime || dd.Type == AttributeType._date)
+                        {
+                            dm.InsertInto(dc.ColumnName, FieldType._datetime);
+                        }
+                        else
+                        {
+                            dm.InsertInto(dc.ColumnName, FieldType._string);
+                        }
+                    }
+                    else
+                    {
+                        dm.InsertInto(dc.ColumnName, FieldType._string);
+                    }
+
+                    // dm.InsertInto(dc.ColumnName, FieldType._string);
                 }
                 columnNames.Add(dc.ColumnName);
             }
@@ -461,7 +482,19 @@ namespace TZ.Import
                     }
                     AddImportStatus(this.DataStatus.DataProcessedCount, this.DataStatus.PercentageToComplete, "Processing support information", Import.DataStatus.STARTED);
                     // send error index
-                    Validation.AfterSave(this, dt); // dt change to InsertData with error status based on that depended what to save
+                    try
+                    {
+                        Validation.AfterSave(this, dt); // dt change to InsertData with error status based on that depended what to save
+
+                    }
+                    catch (Exception ex) {
+                        Errors.Add(new ImportError()
+                        {
+                            Message = "Error while updated support information " + ex.Message + "",
+                            Type = ErrorType.ERROR,
+                        });
+                    }
+                  
                 }
             }
 
@@ -607,7 +640,20 @@ namespace TZ.Import
                         }
                         AddImportStatus(this.DataStatus.DataProcessedCount, this.DataStatus.PercentageToComplete, "Processing support information", Import.DataStatus.STARTED);
                         // send error index
-                        Validation.AfterSave(this, dt); // dt change to InsertData with error status based on that depended what to save
+                        try
+                        {
+                            Validation.AfterSave(this, dt); // dt change to InsertData with error status based on that depended what to save
+
+                        }
+                        catch (Exception ex)
+                        {
+                            Errors.Add(new ImportError()
+                            {
+                                Message = "Error while updated support information " + ex.Message + "",
+                                Type = ErrorType.ERROR,
+                            });
+                        }
+                     
                     }
                 }
 
@@ -671,18 +717,36 @@ namespace TZ.Import
                     {
 
                         string dval = "";
-                        if (dc.DataType == typeof(DateTime))
+                        var dcatt = this.Component.Attributes.Where(x => x.Name.ToLower() == dc.ColumnName.ToLower()).FirstOrDefault();
+                        if (dcatt != null)
                         {
-                            //dval = Convert.ToDateTime(dr[dc.ColumnName]).ToString("yyyy-MM-dd HH:mm:ss");
-                            dm.UpdateInto(dc.ColumnName, FieldType._datetime, "");
-                        }
-                        else if (dc.DataType == typeof(Boolean))
-                        {
-                            dm.UpdateInto(dc.ColumnName, FieldType._bool, "");
+                            if (dcatt.Type == AttributeType._bit)
+                            {
+                                dm.UpdateInto(dc.ColumnName, FieldType._bool, "");
+                            }
+                            else if (dcatt.Type == AttributeType._date || dcatt.Type == AttributeType._datetime)
+                            {
+                                dm.UpdateInto(dc.ColumnName, FieldType._datetime, "");
+                            }
+                            else
+                            {
+                                dm.UpdateInto(dc.ColumnName, FieldType._string, "");
+                            }
                         }
                         else
                         {
-                            dm.UpdateInto(dc.ColumnName, FieldType._string, "");
+                            if (dc.DataType == typeof(DateTime))
+                            {
+                                dm.UpdateInto(dc.ColumnName, FieldType._datetime, "");
+                            }
+                            else if (dc.DataType == typeof(Boolean))
+                            {
+                                dm.UpdateInto(dc.ColumnName, FieldType._bool, "");
+                            }
+                            else
+                            {
+                                dm.UpdateInto(dc.ColumnName, FieldType._string, "");
+                            }
                         }
 
                         //}
@@ -757,7 +821,11 @@ namespace TZ.Import
                         }
                         catch (Exception ex)
                         {
-
+                            Errors.Add(new ImportError()
+                            {
+                                Message = "Error while updated support information " + ex.Message + "",
+                                Type = ErrorType.ERROR,
+                            });
                         }
                     }
 
@@ -903,7 +971,29 @@ namespace TZ.Import
                     }
                     else
                     {
-                        dm.InsertInto(dc.ColumnName, FieldType._string);
+
+                        var dd = this.Component.Attributes.Where(x => x.Name == dc.ColumnName).FirstOrDefault();
+                        if (dd != null)
+                        {
+                            if (dd.Type == AttributeType._bit)
+                            {
+                                dm.InsertInto(dc.ColumnName, FieldType._bool);
+                            }
+                            else if (dd.Type == AttributeType._datetime || dd.Type == AttributeType._date)
+                            {
+                                dm.InsertInto(dc.ColumnName, FieldType._datetime);
+                            }
+                            else
+                            {
+                                dm.InsertInto(dc.ColumnName, FieldType._string);
+                            }
+                        }
+                        else
+                        {
+                            dm.InsertInto(dc.ColumnName, FieldType._string);
+                        }
+
+                     //   dm.InsertInto(dc.ColumnName, FieldType._string);
                     }
 
                     columnNames.Add(dc.ColumnName);
@@ -985,7 +1075,19 @@ namespace TZ.Import
                 }
                 if (Validation != null)
                 {
-                    Validation.AfterSave(this, dt);
+                    try
+                    {
+                        Validation.AfterSave(this, dt); // dt change to InsertData with error status based on that depended what to save
+
+                    }
+                    catch (Exception ex)
+                    {
+                        Errors.Add(new ImportError()
+                        {
+                            Message = "Error while updated support information " + ex.Message + "",
+                            Type = ErrorType.ERROR,
+                        });
+                    }
                 }
 
                 TotalInserted = Logs.Where(x => x.Type == ErrorType.NOERROR && x.ImportingType == ComponentDataLog.ImportType.INSERT).ToList().Count;
@@ -1095,21 +1197,46 @@ namespace TZ.Import
 
                             dm = new DataManager();
                             dm.tableName(this.Component.TableName);
+                            // foreach (TZ.CompExtention. Attribute att in this.Component.Attributes) {
+                            //if (dt.Columns.Contains(att.Name)) { 
+
+                            //}
+
                             foreach (DataColumn dc in dt.Columns)
                             {
-                                if (dc.DataType == typeof(DateTime))
+                                var dcatt = this.Component.Attributes.Where(x => x.Name.ToLower() == dc.ColumnName.ToLower()).FirstOrDefault();
+                                if (dcatt != null)
                                 {
-                                    dm.UpdateInto(dc.ColumnName, FieldType._datetime, "");
+                                    if (dcatt.Type == AttributeType._bit)
+                                    {
+                                        dm.UpdateInto(dc.ColumnName, FieldType._bool, "");
+                                    }
+                                    else if (dcatt.Type == AttributeType._date || dcatt.Type == AttributeType._datetime)
+                                    {
+                                        dm.UpdateInto(dc.ColumnName, FieldType._datetime, "");
+                                    }
+                                    else {
+                                        dm.UpdateInto(dc.ColumnName, FieldType._string, "");
+                                    }
                                 }
-                                else if (dc.DataType == typeof(Boolean))
-                                {
-                                    dm.UpdateInto(dc.ColumnName, FieldType._bool, "");
+                                else {
+                                    if (dc.DataType == typeof(DateTime))
+                                    {
+                                        dm.UpdateInto(dc.ColumnName, FieldType._datetime, "");
+                                    }
+                                    else if (dc.DataType == typeof(Boolean))
+                                    {
+                                        dm.UpdateInto(dc.ColumnName, FieldType._bool, "");
+                                    }
+                                    else
+                                    {
+                                        dm.UpdateInto(dc.ColumnName, FieldType._string, "");
+                                    }
                                 }
-                                else
-                                {
-                                    dm.UpdateInto(dc.ColumnName, FieldType._string, "");
-                                }
+
                             }
+                            //}
+                           
                             foreach (CompExtention.Attribute key in this.Component.Keys)
                             {
                                 dm.Where(this.Component.TableName, key.Name, "=", "");
@@ -1157,18 +1284,28 @@ namespace TZ.Import
                                     }
                                 }
                             }
-                            if (Validation != null)
+                            try
                             {
-                                Validation.AfterUpdate(this, dt);
+                                if (Validation != null)
+                                {
+                                    Validation.AfterUpdate(this, dt);
+                                }
                             }
+                            catch (Exception ex) {
+                                Errors.Add(new ImportError()
+                                {
+                                    Message = "Error while updated support information " +  ex.Message + "",
+                                    Type = ErrorType.ERROR,
+                                });
+                            }                          
                             dt.Dispose();
                             TotalUpdated = Logs.Where(x => x.Type == ErrorType.NOERROR && x.ImportingType == ComponentDataLog.ImportType.UPDATE).ToList().Count;
                         }
                     }
                 }
-
             }
-            ErrorRecord = Logs.Where(x => x.Type == ErrorType.ERROR).ToList().Count;
+            AddImportStatus(this.DataStatus.DataProcessedCount, 100, "Import Completed", Import.DataStatus.COMPLETED);
+            ErrorRecord = Logs.Where(x => x.Type == ErrorType.ERROR).ToList().Count();         
         }
 
         /// <summary>
@@ -1356,7 +1493,27 @@ namespace TZ.Import
                     }
                     else
                     {
-                        dm.InsertInto(dc.ColumnName, FieldType._string);
+                        // dm.InsertInto(dc.ColumnName, FieldType._string);
+                        var dd = this.Component.Attributes.Where(x => x.Name == dc.ColumnName).FirstOrDefault();
+                        if (dd != null)
+                        {
+                            if (dd.Type == AttributeType._bit)
+                            {
+                                dm.InsertInto(dc.ColumnName, FieldType._bool);
+                            }
+                            else if (dd.Type == AttributeType._datetime || dd.Type == AttributeType._date)
+                            {
+                                dm.InsertInto(dc.ColumnName, FieldType._datetime);
+                            }
+                            else
+                            {
+                                dm.InsertInto(dc.ColumnName, FieldType._string);
+                            }
+                        }
+                        else
+                        {
+                            dm.InsertInto(dc.ColumnName, FieldType._string);
+                        }
                     }
 
                     columnNames.Add(dc.ColumnName);
@@ -1398,7 +1555,19 @@ namespace TZ.Import
                 }
                 if (Validation != null)
                 {
-                    Validation.AfterSave(this, dt);
+                    try
+                    {
+                        Validation.AfterSave(this, dt); // dt change to InsertData with error status based on that depended what to save
+
+                    }
+                    catch (Exception ex)
+                    {
+                        Errors.Add(new ImportError()
+                        {
+                            Message = "Error while updated support information " + ex.Message + "",
+                            Type = ErrorType.ERROR,
+                        });
+                    }
                 }
 
                 TotalInserted = Logs.Where(x => x.Type == ErrorType.NOERROR && x.ImportingType == ComponentDataLog.ImportType.INSERT).ToList().Count;
@@ -1526,17 +1695,36 @@ namespace TZ.Import
                             dm.tableName(this.Component.TableName);
                             foreach (DataColumn dc in dt.Columns)
                             {
-                                if (dc.DataType == typeof(DateTime))
+                                var dcatt = this.Component.Attributes.Where(x => x.Name.ToLower() == dc.ColumnName.ToLower()).FirstOrDefault();
+                                if (dcatt != null)
                                 {
-                                    dm.UpdateInto(dc.ColumnName, FieldType._datetime, "");
-                                }
-                                else if (dc.DataType == typeof(Boolean))
-                                {
-                                    dm.UpdateInto(dc.ColumnName, FieldType._bool, "");
+                                    if (dcatt.Type == AttributeType._bit)
+                                    {
+                                        dm.UpdateInto(dc.ColumnName, FieldType._bool, "");
+                                    }
+                                    else if (dcatt.Type == AttributeType._date || dcatt.Type == AttributeType._datetime)
+                                    {
+                                        dm.UpdateInto(dc.ColumnName, FieldType._datetime, "");
+                                    }
+                                    else
+                                    {
+                                        dm.UpdateInto(dc.ColumnName, FieldType._string, "");
+                                    }
                                 }
                                 else
                                 {
-                                    dm.UpdateInto(dc.ColumnName, FieldType._string, "");
+                                    if (dc.DataType == typeof(DateTime))
+                                    {
+                                        dm.UpdateInto(dc.ColumnName, FieldType._datetime, "");
+                                    }
+                                    else if (dc.DataType == typeof(Boolean))
+                                    {
+                                        dm.UpdateInto(dc.ColumnName, FieldType._bool, "");
+                                    }
+                                    else
+                                    {
+                                        dm.UpdateInto(dc.ColumnName, FieldType._string, "");
+                                    }
                                 }
                             }
                             foreach (CompExtention.Attribute key in this.Component.Keys)
@@ -1586,11 +1774,11 @@ namespace TZ.Import
                                     }
                                 }
                             }
-                            if (Validation != null)
-                            {
-                                Validation.AfterUpdate(this, dt);
-                            }
-                            dt.Dispose();
+                            //if (Validation != null)
+                            //{
+                            //    Validation.AfterUpdate(this, dt);
+                            //}
+                            //dt.Dispose();
                             TotalUpdated = Logs.Where(x => x.Type == ErrorType.NOERROR && x.ImportingType == ComponentDataLog.ImportType.UPDATE).ToList().Count;
                             if (Validation != null)
                             {
@@ -1602,11 +1790,18 @@ namespace TZ.Import
                                         this.DataStatus.PercentageToComplete = 90;
                                     }
                                     AddImportStatus(this.DataStatus.DataProcessedCount, this.DataStatus.PercentageToComplete, "Processing support information", Import.DataStatus.STARTED);
-                                    Validation.AfterUpdate(this, dt);
+                                    Validation.AfterUpdate(this, dt);                                    
                                 }
                                 catch (Exception ex)
                                 {
-
+                                    Errors.Add(new ImportError()
+                                    {
+                                        Message = "Error while updated support information " + ex.Message + "",
+                                        Type = ErrorType.ERROR,
+                                    });
+                                }
+                                finally {
+                                    dt.Dispose();
                                 }
                             }                          
                            
@@ -1792,7 +1987,19 @@ namespace TZ.Import
                             }
                             AddImportStatus(this.DataStatus.DataProcessedCount, this.DataStatus.PercentageToComplete, "Processing support information", Import.DataStatus.STARTED);
                             // send error index
-                            Validation.AfterSave(this, dt); // dt change to InsertData with error status based on that depended what to save
+                            try
+                            {
+                                Validation.AfterSave(this, dt); // dt change to InsertData with error status based on that depended what to save
+
+                            }
+                            catch (Exception ex)
+                            {
+                                Errors.Add(new ImportError()
+                                {
+                                    Message = "Error while updated support information " + ex.Message + "",
+                                    Type = ErrorType.ERROR,
+                                });
+                            }
                         }
                     }
                    
@@ -1853,19 +2060,36 @@ namespace TZ.Import
                         foreach (DataColumn dc in dt.Columns)
                         {
 
-                            string dval = "";
-                            if (dc.DataType == typeof(DateTime))
+                            var dcatt = this.Component.Attributes.Where(x => x.Name.ToLower() == dc.ColumnName.ToLower()).FirstOrDefault();
+                            if (dcatt != null)
                             {
-                                //dval = Convert.ToDateTime(dr[dc.ColumnName]).ToString("yyyy-MM-dd HH:mm:ss");
-                                dm.UpdateInto(dc.ColumnName, FieldType._datetime, "");
-                            }
-                            else if (dc.DataType == typeof(Boolean))
-                            {
-                                dm.UpdateInto(dc.ColumnName, FieldType._bool, "");
+                                if (dcatt.Type == AttributeType._bit)
+                                {
+                                    dm.UpdateInto(dc.ColumnName, FieldType._bool, "");
+                                }
+                                else if (dcatt.Type == AttributeType._date || dcatt.Type == AttributeType._datetime)
+                                {
+                                    dm.UpdateInto(dc.ColumnName, FieldType._datetime, "");
+                                }
+                                else
+                                {
+                                    dm.UpdateInto(dc.ColumnName, FieldType._string, "");
+                                }
                             }
                             else
                             {
-                                dm.UpdateInto(dc.ColumnName, FieldType._string, "");
+                                if (dc.DataType == typeof(DateTime))
+                                {
+                                    dm.UpdateInto(dc.ColumnName, FieldType._datetime, "");
+                                }
+                                else if (dc.DataType == typeof(Boolean))
+                                {
+                                    dm.UpdateInto(dc.ColumnName, FieldType._bool, "");
+                                }
+                                else
+                                {
+                                    dm.UpdateInto(dc.ColumnName, FieldType._string, "");
+                                }
                             }
 
                             //}
@@ -1940,7 +2164,11 @@ namespace TZ.Import
                             }
                             catch (Exception ex)
                             {
-
+                                Errors.Add(new ImportError()
+                                {
+                                    Message = "Error while updated support information " + ex.Message + "",
+                                    Type = ErrorType.ERROR,
+                                });
                             }
                         }
 
@@ -3107,7 +3335,7 @@ namespace TZ.Import
                         {
                             string lktext = dr[ifm.FileFields].ToString();
                             int lk = GetLookUp(dr[ifm.FileFields].ToString(), att.LookupInstanceID);
-                            if (lk == -1)
+                            if (lk == -2)
                             {
                                 if (IsCoreLookup(Convert.ToInt32(att.LookupInstanceID)))
                                 {
@@ -3120,7 +3348,7 @@ namespace TZ.Import
                                 }
                             }
 
-                            if (lk != -1)
+                            if (lk != -2)
                             {
                                 dr[ifm.FileFields] = lk;
                             }
@@ -3136,7 +3364,7 @@ namespace TZ.Import
                         {
                             string lktext = dr[ifm.FileFields].ToString();
                             int lk = GetLookUp(dr[ifm.FileFields].ToString(), att.LookupInstanceID);
-                            if (lk == -1)
+                            if (lk == -2)
                             {
                                 if (IsCoreLookup(Convert.ToInt32(att.LookupInstanceID)))
                                 {
@@ -3151,7 +3379,7 @@ namespace TZ.Import
                                     lk = AddLookup(lktext, att.LookupInstanceID);
                                 }
                             }
-                            if (lk != -1)
+                            if (lk != -2)
                             {
                                 dr[ifm.FileFields] = lk;
                             }
@@ -3689,7 +3917,7 @@ namespace TZ.Import
             }
             else
             {
-                return -1;
+                return -2;
             }
         }
         /// <summary>

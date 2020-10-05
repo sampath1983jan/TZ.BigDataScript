@@ -16,6 +16,7 @@ namespace TZ.CompExtention.ImportTemplate
         public bool IsRequired { get; set; }
         public bool IsRow { get; set; }
         public bool IsColumn { get; set; }
+        public string AliasName {get;set;}
         
         public TemplateField() {
             Field = new Attribute();
@@ -26,8 +27,7 @@ namespace TZ.CompExtention.ImportTemplate
             IsRequired = false;
             IsColumn = false;
             IsRow = false;
-           
-
+            AliasName = "";
         }
 
     }
