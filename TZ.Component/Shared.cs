@@ -73,7 +73,9 @@ namespace TZ.CompExtention
                 "ALTER TABLE pr_salary_component_advsettings MODIFY COLUMN IsLoanComponent bit;",
                 "ALTER TABLE pr_salary_component_advsettings MODIFY COLUMN IsITProjectionComponent bit;",
                 "ALTER TABLE `pr_salary_component_advsettings` CHANGE COLUMN `CreatedBy` `CreatedBy` INT(10) NULL ;",
-                "ALTER TABLE  `pr_salary_component_advsettings` CHANGE COLUMN `LastUPD` `LastUPD` DATETIME NULL ; "};
+                "ALTER TABLE  `pr_salary_component_advsettings` CHANGE COLUMN `LastUPD` `LastUPD` DATETIME NULL ; ",
+            "ALTER TABLE `claim_currconv_manual` CHANGE COLUMN `LastUPD` `LastUPD` DATETIME NOT NULL DEFAULT '0001-01-01 00:00:00' ;"
+        };
             try
             {
                 foreach (string s in QueryArray) {
@@ -572,6 +574,284 @@ namespace TZ.CompExtention
         }
 
         #endregion
+
+        private static void CustomEmployeePosition(string connection, int ClientID,string empFields,
+            string positionfields,string templateName,string templatecode,string DOJ) {
+            List<KeyField> empField = Newtonsoft.Json.JsonConvert.DeserializeObject<List<KeyField>>(empFields);
+            List<KeyField> positionField = Newtonsoft.Json.JsonConvert.DeserializeObject<List<KeyField>>(positionfields);
+
+            TZ.CompExtention.ComponentManager employee = new CompExtention.ComponentManager(ClientID, "sys_user", new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
+            employee.LoadAttributes();
+
+
+            TZ.CompExtention.ComponentManager grade = new CompExtention.ComponentManager(ClientID, "grade", new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
+            grade.LoadAttributes();
+
+            
+
+           
+
+            foreach (KeyField kf in empField)
+            {
+                var f = employee.Component.Attributes.Where(x => x.Name == kf.FieldName).FirstOrDefault();
+                if (f != null)
+                {
+                    f.DisplayName = kf.FieldDescription;
+                    if (f.Name == "F_200060")
+                    {
+                        TZ.CompExtention.ComponentManager ccenter = new CompExtention.ComponentManager(ClientID, "CostCenter", new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
+                        ccenter.LoadAttributes();
+                        f.IsRequired = false;
+                        f.IsCore = true;
+                        f.Type = AttributeType._componentlookup;
+                        f.ComponentLookup = ccenter.Component.ID;
+                        f.ComponentLookupDisplayField = ccenter.Component.Attributes.Where(x => x.Name == "F_370010").FirstOrDefault().ID;
+                    }
+                }
+            }
+            employee.Save(employee.Component);
+
+            TZ.CompExtention.ComponentManager emp_pos = new CompExtention.ComponentManager(ClientID, "employee_position", new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
+            emp_pos.LoadAttributes();
+            var a = emp_pos.Component.Attributes.Where(x => x.Name == "EffectiveDate").FirstOrDefault();
+            if (a != null)
+            {
+                a.DisplayName = DOJ;
+                emp_pos.Save(emp_pos.Component);
+            }
+            TZ.CompExtention.ComponentManager position = new CompExtention.ComponentManager(ClientID, "position", new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
+            position.LoadAttributes();
+
+            foreach (KeyField kf in positionField)
+            {
+                var f = position.Component.Attributes.Where(x => x.Name == kf.FieldName).FirstOrDefault();
+                if (f != null)
+                {
+                    f.DisplayName = kf.FieldDescription;
+                    if (f.Name == "F_360050")
+                    {
+                        f.Type = AttributeType._componentlookup;
+                        f.ComponentLookup = grade.Component.ID;
+                        f.ComponentLookupDisplayField = grade.Component.Attributes.Where(x => x.Name == "F_340010").FirstOrDefault().ID;
+                    }
+                    else if (f.Name == "F_360045")
+                    {
+                        f.Type = AttributeType._lookup;
+                        f.LookupInstanceID = "122";
+                    }
+                    else if (f.Name == "F_360105") {
+                        f.Type = AttributeType._lookup;
+                        f.LookupInstanceID = "199";
+                    }
+                }
+            }
+            position.Save(position.Component);
+
+            //get employee position view
+            string formatString_ep = " {0,15:" + "00000000" + "}";
+            string code = string.Format(formatString_ep, 123).Trim();
+            var tev = new CompExtention.ImportTemplate.Template(code, ClientID, connection);
+            string viewid = tev.ViewID;
+
+            CompExtention.ComponentViewManager cvmep = new CompExtention.ComponentViewManager(viewid, ClientID, new CompExtention.DataAccess.ComponentViewHandler(connection, ClientID));
+            cvmep.LoadViewComponents();
+            //CompExtention.ImportTemplate.Template.Remove("Employee Position", connection, ClientID);
+
+            var tmp_ep = new CompExtention.ImportTemplate.Template(connection, ClientID);
+
+            tmp_ep.Name = templateName;
+            tmp_ep.Code = templatecode;
+            tmp_ep.Category = "Employee";
+            tmp_ep.ViewID = cvmep.View.ID;
+
+
+            foreach (Component c in cvmep.View.Components)
+            {
+                if (c.TableName == "sys_user")
+                {
+                    var fld = c.Attributes.Where(x => x.Name == "F_200005").FirstOrDefault();
+                    if (fld != null)
+                    {
+                        CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
+                        te.ID = fld.ID;
+                        te.IsKey = true;
+                        te.IsDefault = true;
+                        te.IsRequired = true;
+                        tmp_ep.TemplateFields.Add(te);
+                    }
+                    fld = c.Attributes.Where(x => x.Name == "F_200015").FirstOrDefault();
+                    // F_200015
+                    if (fld != null)
+                    {
+                        CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
+                        te.ID = fld.ID;
+                        te.IsKey = false;
+                        te.IsDefault = true;
+                        te.IsRequired = true;
+                        tmp_ep.TemplateFields.Add(te);
+                    }
+                }
+                foreach (Attribute att in c.Attributes)
+                {
+                    if (c.ID == position.Component.ID)
+                    {
+                        var pf = positionField.Where(x => x.FieldName == att.Name).FirstOrDefault();
+                        if (pf != null)
+                        {
+                            CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
+                            if (att.Name == "F_360025" || att.Name == "F_360005" || att.Name == "F_360035" || att.Name == "F_360045" || att.Name == "F_360050" || att.Name == "F_360010" || att.Name == "F_360030")
+                            {
+                                te.ID = att.ID;
+                                te.IsKey = true;
+                                te.IsDefault = true;
+
+                                if (att.Name == "F_360050" || att.Name == "F_360045" ||  att.Name == "F_360005")
+                                {
+                                    te.IsRequired = false;
+                                }
+                                else
+                                {
+                                    te.IsRequired = true;
+                                }
+                            }
+                            else
+                            {
+                                te.ID = att.ID;
+                                te.IsKey = false;
+                                te.IsDefault = false;
+                                te.IsRequired = false;
+                            }
+                            tmp_ep.TemplateFields.Add(te);
+                        }
+                    }
+                    else if (c.ID == employee.Component.ID)
+                    {
+                        var ef = empField.Where(x => x.FieldName == att.Name).FirstOrDefault();
+
+                        if (ef != null)
+                        {
+                            CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
+                            te.ID = att.ID;
+                            if (att.Name == "F_200005" || att.Name == "F_200015")
+                            {
+                                continue;
+                            }
+                            else
+                            {
+                                te.IsKey = false;
+                                te.IsDefault = true;
+                                te.IsRequired = false;
+                                tmp_ep.TemplateFields.Add(te);
+                            }
+                        }
+                    }
+                    else
+                    {
+                        if (att.Name.ToLower() == "EffectiveDate".ToLower())
+                        {
+                            CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
+                            te.ID = att.ID;
+                            te.IsKey = false;
+                            te.IsDefault = true;
+                            te.IsRequired = true;
+                            tmp_ep.TemplateFields.Add(te);
+                        }
+                    }
+                }
+            }
+            tmp_ep.Save();
+        }
+        public static void ConvertEmployeePositionPayAsiaSingapore(string connection, int ClientID) {
+
+            //1,2, 3, 4
+            var dtComponentInstance = CompExtention.Shared.GetComponentList(ClientID, connection);
+            List<KeyField> TalentozComponentFields = new List<KeyField>();
+
+            foreach (DataRow dr in dtComponentInstance.Rows)
+            {
+                if (Convert.ToInt32(dr["CompType"].ToString()) == 30000) {
+                    CompExtention.Builder.FieldElement f = new CompExtention.Builder.FieldElement();
+                    f = Newtonsoft.Json.JsonConvert.DeserializeObject<CompExtention.Builder.FieldElement>(dr["FieldAttribute"].ToString());
+                    KeyField fk = new KeyField();
+                    fk.FieldName = "F_" + Convert.ToInt32(dr["FieldInstanceID"].ToString());
+                    
+                    fk.FieldDescription = (dr["FieldDescription"].ToString());
+                    //f.FieldInstanceID = Convert.ToInt32(dr["FieldInstanceID"].ToString());
+                    //f.FieldDescription = (dr["FieldDescription"].ToString());
+                    //f.ComponentID = Convert.ToInt32(dr["CompType"].ToString());
+                     f.FieldTypeID = Convert.ToInt32(dr["FieldTypeID"].ToString());
+                    int fgid = Convert.ToInt32(dr["FieldGroupID"].ToString());
+
+                    if (f.FieldTypeID == 18 || f.FieldTypeID == 20) {
+                        continue;
+                    }
+                    if (fgid == 22)
+                    {
+                        continue;
+                    }
+                    if (fgid == 1 || fgid == 2 || fgid == 3 || fgid == 4 || fgid ==5 || fgid ==6)
+                    {
+                        if (fk.FieldName == "F_200180" && fk.FieldName == "F_200035" || fk.FieldName == "F_200245") {
+                            continue;
+                        }
+
+                        if (fgid == 3) {
+                            if (!fk.FieldDescription.Contains("Overseas")) {
+                                fk.FieldDescription = "Overseas " + fk.FieldDescription;
+                            }
+                        }
+                        if (fgid == 4)
+                        {
+                            if (!fk.FieldDescription.Contains("Local"))
+                            {
+                                fk.FieldDescription = "Local " + fk.FieldDescription;
+                            }
+                        }
+
+                        if (f.FieldInstanceID.ToString() == "200060")
+                        {
+                            fk.FieldDescription = "Cost Center";
+                        }
+                        TalentozComponentFields.Add(fk);
+                    }                   
+                }               
+            }
+
+            var empFields= Newtonsoft.Json.JsonConvert.SerializeObject(TalentozComponentFields);
+
+           // var empFields = "[{ 'FieldName':'F_200005','FieldDescription':'Employee ID'},{ 'FieldName':'F_200015','FieldDescription':'Employee Name'},{ 'FieldName':'F_201235','FieldDescription':'Identity Type'},{ 'FieldName':'F_200025','FieldDescription':'Identity Number'},{ 'FieldName':'F_201115','FieldDescription':'Residence Status'},{ 'FieldName':'F_201295','FieldDescription':'Residence Status Effective Date'},{ 'FieldName':'F_200495','FieldDescription':'Religion'},{ 'FieldName':'F_200045','FieldDescription':'Marital Status'},{ 'FieldName':'F_200010','FieldDescription':'Salutation'},{ 'FieldName':'F_200845','FieldDescription':'Race'},{ 'FieldName':'F_200040','FieldDescription':'Gender'},{ 'FieldName':'F_200030','FieldDescription':'Birth Date'},{ 'FieldName':'F_200050','FieldDescription':'Nationality'},{ 'FieldName':'F_2200155','FieldDescription':'Resignation Date'},{ 'FieldName':'F_201260','FieldDescription':'Probation Period'},{ 'FieldName':'F_200165','FieldDescription':'Employement Status'},{ 'FieldName':'F_201185','FieldDescription':'Bank Code'},{ 'FieldName':'F_200210','FieldDescription':'Bank Branch Code'},{ 'FieldName':'F_200200','FieldDescription':'Bank Account Number'},{ 'FieldName':'F_200080','FieldDescription':'Address 1'},{ 'FieldName':'F_201215','FieldDescription':'Address 2'},{ 'FieldName':'F_201220','FieldDescription':'Address 3'},{ 'FieldName':'F_200100','FieldDescription':'Country'},{ 'FieldName':'F_200085','FieldDescription':'Postal Code'},{ 'FieldName':'F_200110','FieldDescription':'Telephone No'},{ 'FieldName':'F_200105','FieldDescription':'Mobile No'},{ 'FieldName':'F_200115','FieldDescription':'Email Address'},{ 'FieldName':'F_200060','FieldDescription':'Cost Center'}]";
+            var posFields = "[{'FieldName':'F_360025','FieldDescription':'Branch'},{'FieldName':'F_360045','FieldDescription':'Band'},{'FieldName':'F_360050','FieldDescription':'Grade'},{'FieldName':'F_360035','FieldDescription':'Department'},{'FieldName':'F_360105','FieldDescription':'Division'},{'FieldName':'F_360115','FieldDescription':'Category'},{'FieldName':'F_360010','FieldDescription':'Position Title'},{'FieldName':'F_360090','FieldDescription':'Classification'}]";
+
+            CustomEmployeePosition(connection, ClientID, empFields, posFields, "Employee Movements", "1000002","Hiring Date");
+        }
+
+        
+        public static void ConvertEmpleyeePositionPayAsiaIndia(string connection, int ClientID) {
+           // CompExtention.ImportTemplate.Template.Remove("New Hire", connection, ClientID);
+
+            var empFields = "[{'FieldName':'F_200005','FieldDescription':'Employee ID'},{'FieldName':'F_200015','FieldDescription':'Employee Name'}," +
+                "{'FieldName':'F_200395','FieldDescription':'Father Name'},{'FieldName':'F_200030','FieldDescription':'DOB'},{'FieldName':'F_200010'," +
+                "'FieldDescription':'Title'},{'FieldName':'F_200040','FieldDescription':'Gender'},{'FieldName':'F_200045','FieldDescription':'Marital Status'}," +
+                "{'FieldName':'F_200295','FieldDescription':'PAN'},{'FieldName':'F_200355','FieldDescription':'Is PF Aplicable'},{'FieldName':'F_200280'," +
+                "'FieldDescription':'PF No.'},{'FieldName':'F_200285','FieldDescription':'UAN (Previous Employer)'},{'FieldName':'F_200360'," +
+                "'FieldDescription':'IS ESI Applicable'},{'FieldName':'F_200290','FieldDescription':'ESI Number (Previous Employer)'}," +
+                "{'FieldName':'F_200465','FieldDescription':'AADHAR No'},{'FieldName':'F_201090','FieldDescription':'Name as per Aadhaar'}," +
+                "{'FieldName':'F_200375','FieldDescription':'PT Location'},{'FieldName':'F_200210','FieldDescription':'Branch Code'}," +
+                "{'FieldName':'F_200215','FieldDescription':'Branch Name'},{'FieldName':'F_200220','FieldDescription':'Branch Address'}," +
+                "{'FieldName':'F_200205','FieldDescription':'BankName'}," +
+                "{'FieldName':'F_200200','FieldDescription':'Bank Acc No'},{'FieldName':'F_200225','FieldDescription':'Name as per Bank Records'}," +
+                "{'FieldName':'F_201085','FieldDescription':'Bank IFSC code'},{'FieldName':'F_200390','FieldDescription':'Payment Type'}," +
+                "{'FieldName':'F_200105','FieldDescription':'Mobile'},{'FieldName':'F_200115','FieldDescription':'e-mail ID'}," +
+                "{'FieldName':'F_200080','FieldDescription':'Address'},{'FieldName':'F_200090','FieldDescription':'City'}," +
+                "{'FieldName':'F_200085','FieldDescription':'PIN Code'},{'FieldName':'F_200060','FieldDescription':'Cost Centre Name'}]";
+
+            var positionfields = "[{'FieldName':'F_360010','FieldDescription':'Position Name'},{'FieldName':'F_360005','FieldDescription':'Position Code'},{'FieldName':'F_360035','FieldDescription':'Department name'}," +
+                "{'FieldName':'F_360050','FieldDescription':'Grade'},{'FieldName':'F_360105','FieldDescription':'Division'}," +
+                "{'FieldName':'F_360030','FieldDescription':'Work Location'},{'FieldName':'F_360025','FieldDescription':'Business Unit'}]";
+
+            CustomEmployeePosition(connection, ClientID, empFields, positionfields, "New Hire", "1000001","DOJ");
+
+        }
         public static void ConvertEmployeePositionPayAsia(string connection, int ClientID) {
 
          
@@ -581,23 +861,7 @@ namespace TZ.CompExtention
             TZ.CompExtention.ComponentManager position = new CompExtention.ComponentManager(ClientID, "position", new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
             position.LoadAttributes();
 
-            //var cm = new CompExtention.ComponentManager();
-            //cm.Set(new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
-            //cm.NewComponent(ClientID, "Employee_Position", (CompExtention.ComponentType.link));
-            //var component = (CompExtention.Component)cm.Component;
-            //component.TableName = "Employee_Position";
-            //TZ.CompExtention.ComponentBuilder cb = new CompExtention.ComponentBuilder(connection);
-            //component.Attributes = cb.GetTableFields("Employee_Position", ClientID);
-
-            //foreach (Attribute att in component.Attributes)
-            //{
-            //    if (att.Name.ToLower() == "EffectiveDate".ToLower())
-            //    {
-            //        att.DisplayName = "Effective Date";
-            //    }
-
-            //}
-            //cm.Save(component);
+          
 
             string formatString_ep = " {0,15:" + "00000000" + "}";
 
@@ -610,26 +874,7 @@ namespace TZ.CompExtention
 
             CompExtention.ComponentViewManager cvmep = new CompExtention.ComponentViewManager(viewid,ClientID ,new CompExtention.DataAccess.ComponentViewHandler(connection, ClientID));
 
-            //var view_ep = cvmep.NewView("Employee Position");
-
-            //var vr_ep = new CompExtention.ComponentRelation();
-            //var vritem_ep = new ViewRelation();
-            //vr_ep.ComponentID = employee.Component.ID;
-            //vr_ep.ChildComponentID = Convert.ToString(component.ID);
-            //vr_ep.Relationship.Add(new ViewRelation() { Left = vr_ep.ComponentID, Right = vr_ep.ChildComponentID, LeftField = "UserID", RightField = "UserID" });
-            //vr_ep.Relationship.Add(new ViewRelation() { Left = vr_ep.ComponentID, Right = vr_ep.ChildComponentID, LeftField = "ClientID", RightField = "ClientID" });
-            //view_ep.CoreComponent = vr_ep.ComponentID;
-            //view_ep.ComponentRelations.Add(vr_ep);
-
-            //vr_ep = new CompExtention.ComponentRelation();
-            //vritem_ep = new ViewRelation();
-            //vr_ep.ComponentID = position.Component.ID;
-            //vr_ep.ChildComponentID = Convert.ToString(component.ID);
-            //vr_ep.Relationship.Add(new ViewRelation() { Left = vr_ep.ComponentID, Right = vr_ep.ChildComponentID, LeftField = "PositionID", RightField = "PositionID" });
-            //vr_ep.Relationship.Add(new ViewRelation() { Left = vr_ep.ComponentID, Right = vr_ep.ChildComponentID, LeftField = "ClientID", RightField = "ClientID" });
-            //view_ep.ComponentRelations.Add(vr_ep);
-
-            //cvmep.Save(view_ep);
+            
             cvmep.LoadViewComponents();
             CompExtention.ImportTemplate.Template.Remove("Employee Position", connection, ClientID);
 
@@ -787,7 +1032,7 @@ namespace TZ.CompExtention
 
             var position = tzComponentWithImportComp.Where(x => x.Key == 360000).FirstOrDefault().Value;
             var employee = tzComponentWithImportComp.Where(x => x.Key == 30000).FirstOrDefault().Value;
-            var positionField = "F_360045,F_360025,F_360035,F_360105,F_360050,F_360040,F_360005,F_360020,F_360010,F_360115,F_360030".Split(',');
+            var positionField = "F_360045,F_360025,F_360035,F_360105,F_360050,F_360040,F_360005,F_360020,F_360010,F_360115,F_360030,F_360090".Split(',');
             var empField = "F_200005,F_200305,F_200310,F_200145,F_200530,F_200030,F_200115,F_200255,F_200015,F_200170,F_200040,F_200025,F_200045,F_200010,F_200405,F_200410,F_200795,F_200155,F_200160".Split(',');
             foreach (Component c in cvmep.View.Components)
             {
@@ -1033,6 +1278,24 @@ namespace TZ.CompExtention
                         _att.IsNullable = true;
                         _att.Type =  AttributeType._string;
                         _att.IsCore = false;                         
+                        _att.IsAuto = false;
+                        _att.IsSecured = false;
+                        Comp.AddAttribute(_att);
+
+                         _att = Comp.NewAttribute(ClientID);
+                        _att.Name = "F_200340";
+                        _att.DisplayName = "Is User";
+                        _att.DefaultValue = "";
+                        _att.FileExtension = "";
+                        _att.LookupInstanceID = "-1";
+                        _att.Length = 0;
+                        _att.IsUnique = false;
+                        _att.ComponentLookup = "";
+                        _att.ComponentLookupDisplayField = "";
+                        _att.IsRequired = false;
+                        _att.IsNullable = true;
+                        _att.Type = AttributeType._bit;
+                        _att.IsCore = false;
                         _att.IsAuto = false;
                         _att.IsSecured = false;
                         Comp.AddAttribute(_att);
@@ -1320,6 +1583,15 @@ namespace TZ.CompExtention
                     tmp.Code = string.Format(formatString, index);
                     tmp.Category = "Employee";
                     tmp.ViewID = emp.ViewID;
+                    if (Convert.ToInt32(dr["FieldGroupID"]) == 1) {
+                        CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
+                           var ifield = cms.Component.Attributes.Where(x => x.Name == "F_200340").FirstOrDefault();
+                        te.ID = ifield.ID;
+                        te.IsKey = false;
+                        te.IsRequired = false;
+                        te.IsDefault = false;
+                        tmp.TemplateFields.Add(te);
+                    }
                     // 200005
                     foreach (FieldElement field in gpFields) {
                         CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
@@ -1339,8 +1611,14 @@ namespace TZ.CompExtention
                                 te.IsRequired = true;
                                 te.IsDefault = true;
                             }
-                            else {
-                                te.IsKey = ifield.IsKey ;
+                            else if (field.FieldInstanceID == 200395) {
+                                te.IsKey = false;
+                                te.IsRequired = false;
+                                te.IsDefault = false;
+                            }
+                            else
+                            {
+                                te.IsKey = ifield.IsKey;
                                 te.IsRequired = ifield.IsRequired;
                                 te.IsDefault = true;
                                 //if (te.IsRequired == true)
@@ -1641,6 +1919,7 @@ namespace TZ.CompExtention
             ConvertToLeaveDeduction(ClientID, connection);
             EmployeeNoUpdate(ClientID, connection);
             ConvertToSalaryPayComponent(ClientID, connection);
+            ConvertCurrenyConvertion(ClientID, connection);
         }
 
         private static bool ConvertMalysianStat(int ClientID, string connection, List <FieldElement> fields, TZ.CompExtention.ComponentManager usercomp) {
@@ -1771,6 +2050,114 @@ namespace TZ.CompExtention
             return true;
 
         }
+        public static void ConvertCurrenyConvertion( int ClientID,string connection)
+        {
+
+            TZ.CompExtention.ComponentManager currency = new CompExtention.ComponentManager(ClientID, "Currency", new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
+            currency.LoadAttributes();
+
+            var cm_currencycon = new CompExtention.ComponentManager();
+            cm_currencycon.Set(new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
+            cm_currencycon.NewComponent(ClientID, "Claim Currency Convertion", (CompExtention.ComponentType.core));
+            var compCurrencyconv = (CompExtention.Component)cm_currencycon.Component;
+            compCurrencyconv.EntityKey = "ConvID";
+            compCurrencyconv.TableName = "claim_currconv_manual";
+
+            var cb = new CompExtention.ComponentBuilder(connection);
+            compCurrencyconv.Attributes = cb.GetTableFields("claim_currconv_manual", ClientID);
+            if (compCurrencyconv.Attributes.Count > 0)
+            {
+                foreach (Attribute att in compCurrencyconv.Attributes)
+                {
+                    if (att.Name.ToLower() == "ConvID".ToLower())
+                    {
+                        att.IsKey = true;
+                        att.IsRequired = true;
+                        att.IsCore = true;
+                        att.IsAuto = true;
+                        compCurrencyconv.Keys.Add(att);
+                    }
+                    if (att.Name.ToLower () == "FromCurrency".ToLower())
+                    {
+                        att.IsKey = false;
+                        att.IsRequired = true;
+                        att.IsCore = true;
+                        att.Type = AttributeType._componentlookup;
+                        att.ComponentLookup= currency.Component.ID;
+                        att.DisplayName = SplitCamalCase(att.DisplayName);
+                        att.ComponentLookupDisplayField = currency.Component.Attributes.Where(x => x.Name.ToLower() == "CurrencyShortName".ToLower()).FirstOrDefault().ID;
+                       // compCurrencyconv.Keys.Add(att);
+                    }
+                    if (att.Name.ToLower() == "ToCurrency".ToLower())
+                    {
+                        att.IsKey = false;
+                        att.IsRequired = true;
+                        att.IsCore = true;
+                        att.Type = AttributeType._componentlookup;
+                        att.ComponentLookup = currency.Component.ID;
+                        att.ComponentLookupDisplayField = currency.Component.Attributes.Where(x => x.Name.ToLower() == "CurrencyShortName".ToLower()).FirstOrDefault().ID;
+                        att.DisplayName = SplitCamalCase(att.DisplayName);
+                       // compCurrencyconv.Keys.Add(att);
+                    }
+                    if (att.Name.ToLower() == "Rate".ToLower())
+                    {
+                        att.IsKey = false;
+                        att.IsRequired = true;
+                        att.IsCore = true;
+                        att.Type = AttributeType._decimal;
+                        att.DisplayName = SplitCamalCase(att.DisplayName);
+                      //  compCurrencyconv.Keys.Add(att);
+                    }
+                    else
+                    {
+                        att.DisplayName = SplitCamalCase(att.DisplayName);
+                    }
+                }
+                cm_currencycon.Save(compCurrencyconv);
+            }
+
+
+            CompExtention.ComponentViewManager cvm = new CompExtention.ComponentViewManager(new CompExtention.DataAccess.ComponentViewHandler(connection, ClientID));
+            var view = cvm.NewView(cm_currencycon.Component.Name);
+            view.CoreComponent = cm_currencycon.Component.ID;
+            cvm.Save(view);
+
+            var tmp_er = new CompExtention.ImportTemplate.Template(connection, ClientID);
+
+            string formatString_er = " {0,15:" + "00000000" + "}";
+            tmp_er.Name = cm_currencycon.Component.Name;
+            tmp_er.Code = string.Format(formatString_er, new Random().Next(1, 200000)).Trim();
+            tmp_er.Category = "Claim";
+            tmp_er.ViewID = cvm.View.ID;
+
+            foreach (Attribute att in cm_currencycon.Component.Attributes)
+            {
+                if (att.Name != "ConvID" && att.Name != "ClientID" && att.Name != "CreatedBy" && att.Name != "LastUPD")
+                {
+                    if (att.Name == "FromCurrency" || att.Name == "ToCurrency" || att.Name == "FromDate" || att.Name == "ToDate")
+                    {
+                        CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
+                        te.IsKey = true;
+                        te.IsRequired = true;
+                        te.ID = att.ID;
+                        te.IsDefault = true;
+                        tmp_er.TemplateFields.Add(te);
+                    }
+                    else
+                    {
+                        CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
+                        te.IsKey = false;
+                        te.IsRequired = att.IsRequired;
+                        te.ID = att.ID;
+                        te.IsDefault = att.IsRequired;
+                        tmp_er.TemplateFields.Add(te);
+                    }
+                }
+            }
+            tmp_er.Save();
+
+        }
+
         private static bool ConvertClaims(int ClientID, string connection)
         {
             TZ.CompExtention.ComponentManager employee = new CompExtention.ComponentManager(ClientID, "sys_user", new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
@@ -3289,7 +3676,7 @@ namespace TZ.CompExtention
                             CompExtention.ImportTemplate.TemplateField te = new CompExtention.ImportTemplate.TemplateField();
                             if (attt.Name == "ComponentName" 
                                 || attt.Name == "ComponentCode" || attt.Name == "PayType" 
-                                || attt.Name == "IsPaidComponent" || attt.Name == "CalculationType"
+                                || attt.Name == "ISPaidComponent" || attt.Name == "CalculationType"
                                 || attt.Name == "Formula" || attt.Name == "ComponentType"
                                 || attt.Name == "ComponentDisplayName" || attt.Name == "ComponentDisplayCode"
                                 || attt.Name.ToLower() == "ConsiderForLOP".ToLower()
@@ -3330,11 +3717,16 @@ namespace TZ.CompExtention
                             if (attt.Name == "ClientID" || attt.Name == "ComponentID") {
                                 continue;
                             }
-                            if (attt.Name == "IsOneTimeTaxable" || attt.Name == "ComponentGrouping")
+                            if (attt.Name == "IsOneTimeTaxable" )
                             {
                                 te.IsKey = false;
                                 te.IsDefault = true;
                                 te.IsRequired = true;
+                                tmp_ep.TemplateFields.Add(te);
+                            } if (attt.Name == "ComponentGrouping") {
+                                te.IsKey = false;
+                                te.IsDefault = true;
+                                te.IsRequired = false;
                                 tmp_ep.TemplateFields.Add(te);
                             }
                             else
@@ -3643,6 +4035,9 @@ namespace TZ.CompExtention
             return db.Database.GetDatatable(select);
         }
         public static void ConvertCustomFields(int ClientID, string connection) {
+
+            CompExtention.ImportTemplate.Template.Remove("Employee more Information", connection, ClientID);
+
             TZ.CompExtention.ComponentManager employeeManager = new CompExtention.ComponentManager(ClientID, "sys_user", new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
             employeeManager.LoadAttributes();
             DataTable dtMoreFieldInstance = GetMoreFieldInstance(connection, ClientID);
@@ -3657,6 +4052,7 @@ namespace TZ.CompExtention
 
                     var cm = new CompExtention.ComponentManager();
                     cm.Set(new TZ.CompExtention.DataAccess.ComponentDataHandler(connection));
+              
                     cm.NewComponent(ClientID, "Employee more Information", (CompExtention.ComponentType.meta));
                     var component = (CompExtention.Component)cm.Component;
                     component.TableName = tbName;
@@ -3721,7 +4117,11 @@ namespace TZ.CompExtention
                         _att.IsSecured = false;
                         component.AddAttribute(_att);
                     }
+                if (cm.Save(component) == false) {
+                    cm.Remove();
+                    cm.Component.ID = "";
                     cm.Save(component);
+                }
                     cm.LoadAttributes();
 
                     CompExtention.ComponentViewManager cvm = new CompExtention.ComponentViewManager(new CompExtention.DataAccess.ComponentViewHandler(connection, ClientID));
@@ -3763,7 +4163,7 @@ namespace TZ.CompExtention
                             {
                                 te.IsKey = ifield.IsKey;
                                 te.IsRequired = ifield.IsRequired;
-                                te.IsDefault = false;                                                           
+                                te.IsDefault = true;                                                           
                             }
                             tmp.TemplateFields.Add(te);
                         }
@@ -4028,6 +4428,10 @@ namespace TZ.CompExtention
 
     }
 
+    public class KeyField { 
+    public string FieldName { get; set; }
+      public string FieldDescription { get; set; }
+    }
     public class TZComponentView { 
     public string ComponentID { get; set; }
         public string ViewID { get; set; }

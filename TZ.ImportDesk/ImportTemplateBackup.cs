@@ -79,6 +79,14 @@ namespace TZ.ImportDesk
                 txtPath.Text = opnFile.FileName;
             }
         }
+        private void PushLookup(int cid, string conn) {
+            TZ.CompExtention.Shared.CreateHalfDayLookup(cid, conn);
+            TZ.CompExtention.Shared.CreateHolidayLookUp(cid, conn);
+            TZ.CompExtention.Shared.CreateLeavePeriod(cid, conn);
+            TZ.CompExtention.Shared.CreatePayType(cid, conn);
+            TZ.CompExtention.Shared.CreateTaxType(cid, conn);
+            TZ.CompExtention.Shared.CreateCalculationType(cid, conn);
+        }
         private void btnRestore_Click(object sender, EventArgs e)
         {
             if (txtConnection.Text != "") {
@@ -95,9 +103,9 @@ namespace TZ.ImportDesk
                             TemplateBackup tb = Newtonsoft.Json.JsonConvert.DeserializeObject<TemplateBackup>(s);
                             try
                             {
+                                PushLookup(cid, txtConnection.Text);
                                 TemplateRestore tr = new TemplateRestore(cid, txtConnection.Text);
-                                tr.Restore(tb, cid);
-                                
+                                tr.Restore(tb, cid);                                
                             }
                             catch (Exception ex)
                             {

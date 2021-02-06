@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Data;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -23,28 +24,40 @@ namespace TZ.CompExtention.Builder.Data
         public const string DbConnection = "Server=dell6;Initial Catalog=talentozdev;Uid=root;Pwd=admin312";
         public void InitDbs(string conn)
         {
-            if (conn == "")
-            {
-                string assemblyFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().CodeBase);
-                assemblyFolder = assemblyFolder.Replace("\\Debug", "");
-                assemblyFolder = assemblyFolder.Replace("\\bin", "");
-                assemblyFolder = assemblyFolder.Replace("\\netcoreapp2.1", "");
 
-                assemblyFolder = assemblyFolder.Replace("file:\\", "");
-                string text = System.IO.File.ReadAllText(assemblyFolder + @"\appsettings.json");
-                //dynamic o = Newtonsoft.Json.JsonConvert.DeserializeObject<appSetting>(text);
-                //conn = o.Conn;
+            string dataProvider = @"MySql.Data.MySqlClient";
+            string dataProviderDescription = @".Net Framework Data Provider for MySQL";
+            string dataProviderName = @"MySQL Data Provider";
+            string dataProviderType = @"MySql.Data.MySqlClient.MySqlClientFactory, MySql.Data, Version=8.0.19.0, Culture=neutral, PublicKeyToken=c5687fc88969c44d";
+            DataTable dt = new DataTable();
+            dt.Columns.Add("Name");
+            dt.Columns.Add("Description");
+            dt.Columns.Add("InvariantName");
+            dt.Columns.Add("AssemblyQualifiedName");
+            dt.Rows.Add(dataProviderName, dataProviderDescription, dataProvider, dataProviderType);
 
-                if (conn == null)
-                {
-                    conn = DbConnection;
-                }
-            }
+            //if (conn == "")
+            //{
+            //    string assemblyFolder = Path.GetDirectoryName(Assembly.GetExecutingAssembly().CodeBase);
+            //    assemblyFolder = assemblyFolder.Replace("\\Debug", "");
+            //    assemblyFolder = assemblyFolder.Replace("\\bin", "");
+            //    assemblyFolder = assemblyFolder.Replace("\\netcoreapp2.1", "");
+
+            //    assemblyFolder = assemblyFolder.Replace("file:\\", "");
+            //    string text = System.IO.File.ReadAllText(assemblyFolder + @"\appsettings.json");
+            //    dynamic o = Newtonsoft.Json.JsonConvert.DeserializeObject<appSetting>(text);
+            //    conn = o.Conn;
+
+            //    if (conn == null)
+            //    {
+            //        conn = DbConnection;
+            //    }
+            //}
             //Modify the connections to suit
             //Comment any databases that should not be executed against
             DBDatabase mysql = DBDatabase.Create("MySQL"
                                                     , conn
-                                                    , DbProvider);
+                                                    , DbProvider, dt);
             this._database = mysql;
             this._database.HandleException += new DBExceptionHandler(database_HandleException);
             var il = conn.Split(';').Where(x => x.ToLower().IndexOf("initial") >= 0).ToList();

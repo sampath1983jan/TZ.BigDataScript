@@ -212,10 +212,9 @@ namespace TZ.ImportDesk
 
         private void button1_Click_1(object sender, EventArgs e)
         {
-
             try
             {
-                TZ.CompExtention.Shared.ConvertEmployeePositionPayAsia(Connection, ClientID);
+                TZ.CompExtention.Shared.ConvertEmpleyeePositionPayAsiaIndia(Connection, ClientID);
                 MessageBox.Show("done");
             }
             catch (Exception ex)
@@ -417,6 +416,20 @@ namespace TZ.ImportDesk
             //    var a = "talentozdev" + ",root" + ",admin312" + "," + path;
             //    arr = a.Split(',');
             //    ExecuteBatchFile(@"C:\sampath\backup\mysqlbk.bat", arr);
+        }
+
+        private void btnCustom_Click(object sender, EventArgs e)
+        {
+            try
+            {
+                TZ.CompExtention.Shared.ConvertEmployeePositionPayAsiaSingapore(   Connection, ClientID);
+                MessageBox.Show("done");
+            }
+            catch (Exception ex)
+            {
+                MessageBox.Show("Error:" + ex.Message);
+
+            }
         }
     }
 }

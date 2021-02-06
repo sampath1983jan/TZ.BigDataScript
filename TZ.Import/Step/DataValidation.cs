@@ -44,8 +44,21 @@ namespace TZ.Import.Step
         public DataTable GetComponentData(string compID, string logPath)
         {
             List<ImportError> ie = new List<ImportError>();           
-            string strjson = File.ReadAllText(logPath + "/" + this.Context.ID + ".json");
-            dt = Newtonsoft.Json.JsonConvert.DeserializeObject<DataTable>(strjson);
+            string path = logPath + "/" + this.Context.ID + ".json";
+            if (System.IO.File.Exists(path))
+            {
+                FileStream fs = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.Read);
+
+                string ss;
+                using (StreamReader reader = new StreamReader(fs))
+                {
+                    ss = reader.ReadToEnd();
+                }
+                fs.Close();
+                dt = Newtonsoft.Json.JsonConvert.DeserializeObject<DataTable>(ss);
+            }
+
+           
             this.Context.LoadComponentView();
             var CoreComponent = Context.View.Components.Where(x => x.Type == ComponentType.core).ToList();
             var comp = Context.View.Components.Where(x => x.ID == compID).FirstOrDefault();
@@ -99,8 +112,23 @@ namespace TZ.Import.Step
         public void GetComponentData(string logPath,bool withStatus =false) {
            
             this.Context.LoadComponentView();
-            string strjson = File.ReadAllText(logPath + "/" + this.Context.ID + ".json");
-            dt = Newtonsoft.Json.JsonConvert.DeserializeObject<DataTable>(strjson);
+            //string strjson = File.ReadAllText(logPath + "/" + this.Context.ID + ".json");
+
+            string path = logPath + "/" + this.Context.ID + ".json";
+            if (System.IO.File.Exists(path))
+            {
+                FileStream fs = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.Read);
+
+                string ss;
+                using (StreamReader reader = new StreamReader(fs))
+                {
+                    ss = reader.ReadToEnd();
+                }
+                fs.Close();
+                dt = Newtonsoft.Json.JsonConvert.DeserializeObject<DataTable>(ss);
+            }
+
+           // dt = Newtonsoft.Json.JsonConvert.DeserializeObject<DataTable>(strjson);
             var CoreComponent = Context.View.Components.Where(x => x.Type == ComponentType.core ||
             x.Type == ComponentType.pseudocore || x.Type == ComponentType.meta  || x.Type == ComponentType.attribute 
             || x.Type== ComponentType.link ||   x.Type == ComponentType.transaction ).ToList();
@@ -146,6 +174,7 @@ namespace TZ.Import.Step
                         cd.ImportFields.AddRange(keyFields);
                         ComponentData coreCd = GetCache(logPath + "/" + "cd" + "_" + c.ID + "_" + this.Context.ID + ".json");
                         coreCd.Component = c;
+                        coreCd.LoadTargetData(this.Context.Connection);
                         cd.ParentComponentData.Add(coreCd);
                     }
 
@@ -209,6 +238,7 @@ namespace TZ.Import.Step
                         cd.ImportFields.AddRange(keyFields);
                         ComponentData coreCd = GetCache(logPath + "/" + "cd" + "_" + c.ID + "_" + this.Context.ID + ".json");
                         coreCd.Component = c;
+                        coreCd.LoadTargetData(this.Context.Connection);
                         cd.ParentComponentData.Add(coreCd);
                     }
                 }
@@ -388,8 +418,21 @@ namespace TZ.Import.Step
             var lok = Global.GetLookup(this.Context.ClientID, GetLookup(), this.Context.Connection);
             File.WriteAllText(logPath + "/" + this.Context.ID + "_lookup.json", Newtonsoft.Json.JsonConvert.SerializeObject(lok));
 
-            string strjson = File.ReadAllText(logPath + "/" + this.Context.ID + ".json");
-            dt = Newtonsoft.Json.JsonConvert.DeserializeObject<DataTable>(strjson);
+            // string strjson = File.ReadAllText(logPath + "/" + this.Context.ID + ".json");
+            string path = logPath + "/" + this.Context.ID + ".json";
+            if (System.IO.File.Exists(path))
+            {
+                FileStream fs = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.Read);
+
+                string ss;
+                using (StreamReader reader = new StreamReader(fs))
+                {
+                    ss = reader.ReadToEnd();
+                }
+                fs.Close();
+                dt = Newtonsoft.Json.JsonConvert.DeserializeObject<DataTable>(ss);
+            }
+           // dt = Newtonsoft.Json.JsonConvert.DeserializeObject<DataTable>(strjson);
             ///
             var CoreComponent = Context.View.Components.Where(x => x.Type == ComponentType.core|| x.Type == ComponentType.meta).ToList();
          
@@ -446,8 +489,21 @@ namespace TZ.Import.Step
         {
             var lok = Global.GetLookup(this.Context.ClientID, GetLookup(), this.Context.Connection);
             File.WriteAllText(logPath + "/" + this.Context.ID + "_lookup.json", Newtonsoft.Json.JsonConvert.SerializeObject(lok));
-            string strjson = File.ReadAllText(logPath + "/" + this.Context.ID + ".json");
-            dt = Newtonsoft.Json.JsonConvert.DeserializeObject<DataTable>(strjson);
+            //string strjson = File.ReadAllText(logPath + "/" + this.Context.ID + ".json");
+            //dt = Newtonsoft.Json.JsonConvert.DeserializeObject<DataTable>(strjson);
+            string path = logPath + "/" + this.Context.ID + ".json";
+            if (System.IO.File.Exists(path))
+            {
+                FileStream fs = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.Read);
+
+                string ss;
+                using (StreamReader reader = new StreamReader(fs))
+                {
+                    ss = reader.ReadToEnd();
+                }
+                fs.Close();
+                dt = Newtonsoft.Json.JsonConvert.DeserializeObject<DataTable>(ss);
+            }
             this.Context.LoadComponentView();
             List<ImportError> ie = new List<ImportError>();
            var CoreComponent= Context.View.Components.Where(x => x.Type == ComponentType.core).ToList();
@@ -515,8 +571,23 @@ namespace TZ.Import.Step
             File.WriteAllText(path, data);
         }
         private ComponentData GetCache(string path) {
-           string s= File.ReadAllText(path);
-         return   Newtonsoft.Json.JsonConvert.DeserializeObject<ComponentData>(s);
+
+         
+            if (System.IO.File.Exists(path))
+            {
+                FileStream fs = new FileStream(path, FileMode.Open, FileAccess.ReadWrite, FileShare.Read);
+
+                string ss;
+                using (StreamReader reader = new StreamReader(fs))
+                {
+                    ss = reader.ReadToEnd();
+                }
+                fs.Close();
+                return Newtonsoft.Json.JsonConvert.DeserializeObject<ComponentData>(ss);
+            }
+
+            //   string s= File.ReadAllText(path);
+            return new ComponentData(-1,null);
 
         }
         /// <summary>

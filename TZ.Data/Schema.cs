@@ -113,7 +113,7 @@ namespace TZ.Data
                
             }
             foreach (WhereStatement ws in DataSchema.Wheres) {
-                var aa = DataSchema.Fields.Where(x => x.Field == ws.FieldName).FirstOrDefault();
+                var aa = DataSchema.Fields.Where(x => x.Field.ToLower() == ws.FieldName.ToLower()).FirstOrDefault();
                 if (aa == null) {
                     create.Add(ws.FieldName, DbType.String);
                 }               

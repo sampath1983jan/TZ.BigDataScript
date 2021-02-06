@@ -47,7 +47,8 @@ namespace TZ.CompExtention
         /// 
         /// </summary>
         /// <returns></returns>
-        public IComponent NewComponent(int clientID,string name, ComponentType type) {
+        public IComponent NewComponent(int ClientID,string name, ComponentType type) {
+            this.clientID = ClientID;
             component = new Component(name, type);
             return component;
         }
@@ -58,11 +59,13 @@ namespace TZ.CompExtention
                 return this.actions.UpdateComponent((Component)component);
             }
             else {
+               
                 if (this.actions.GetComponent(this.Component.TableName) ==null)
                 {
                     return this.actions.SaveComponent((Component)component);
                 }
                 else {
+                    this.component.ID = this.actions.GetComponent(this.Component.TableName).ID ;
                     return false;
                 }
             }        
